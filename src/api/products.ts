@@ -23,3 +23,10 @@ export async function createProduct(product: any) {
   const res = await axiosInstance.post('/products/', product)
   return res.data // puedes retornar la respuesta del backend
 }
+
+// función para editar un producto
+export async function updateProduct(product: any) {
+  // Asegúrate que el objeto product tiene el campo id
+  const res = await axiosInstance.put(`/products/${product.id}`, product)
+  return res.data // puedes retornar la respuesta del backend
+}

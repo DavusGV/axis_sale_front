@@ -19,10 +19,10 @@ const props = defineProps({
   totalPages: Number,
   nextPage: Function,
   prevPage: Function,
-  paginate: Function
+  paginate: Function,
+  handleEdit: Function,   // <-- AGREGA ESTO
+  handleDelete: Function  // <-- Y también para delete, así es más claro
 })
-
-
 
 </script>
 
@@ -61,7 +61,10 @@ const props = defineProps({
                 {{ item[col.key] }}
               </td>
               <td>
-                <TableActions :on-delete="() => handleDelete(item.id)" />
+                <TableActions
+                  :on-edit="() => handleEdit(item)"
+                  :on-delete="() => handleDelete(item.id)"
+                />
               </td>
             </tr>
           </tbody>

@@ -10,6 +10,7 @@ import { fetchProducts } from '@/api/products'
 import ProductModal from '@/components/products/ProductsModal.vue'
 
 const showProductModal = ref(false)
+const editingProduct = ref(null)
 const productos = ref([])
 const total = ref(0)
 const currentPage = ref(1)
@@ -20,7 +21,6 @@ const columns = [
   { key: 'nombre', label: 'Nombre' },
   { key: 'codigo', label: 'Código' },
   { key: 'descripcion', label: 'Descripción' },
-  { key: 'precio_compra', label: 'Precio Compra' },
   { key: 'precio_compra', label: 'Precio Compra' },
   { key: 'precio_venta', label: 'Precio Venta' },
   { key: 'stock', label: 'Stock' },
@@ -65,8 +65,15 @@ const handlePageChange = (page: number) => {
 
 
 function openProductModal() {
+  editingProduct.value = null
   showProductModal.value = true
 }
+
+function openEditModal(producto) {
+  editingProduct.value = { ...producto } // Clonamos el producto para evitar mutaciones reactivas
+  showProductModal.value = true
+}
+
 function closeProductModal() {
   showProductModal.value = false
 }
@@ -97,10 +104,13 @@ onMounted(loadProducts)
     :next-page="nextPage"
     :prev-page="prevPage"
     :paginate="paginate"
+    :handleEdit="openEditModal"
+    :handleDelete="handleDelete"
     @changePage="handlePageChange"
   />
    <ProductModal
     :show="showProductModal"
+    :product="editingProduct"
     @close="closeProductModal"
     @saved="onProductSaved"
   />

@@ -1,7 +1,9 @@
 <template>
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
     <div class="bg-white dark:bg-gray-900 dark:text-gray-100 rounded-lg shadow-lg p-6 w-[95vw] max-w-md transition-colors duration-200">
-      <h2 class="text-xl font-bold mb-4">Agregar Producto</h2>
+      <h2 class="text-xl font-bold mb-4">
+        {{ props.product && props.product.id ? 'Editar Producto' : 'Agregar Producto' }}
+      </h2>
       <form @submit.prevent="submit">
         <div class="mb-3">
           <label class="block text-sm mb-1">Categoría</label>
@@ -45,15 +47,26 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { fetchCategories, createProduct } from '@/api/products'
+import { fetchCategories, createProduct, updateProduct } from '@/api/products'
 import Swal from 'sweetalert2'
 
 const props = defineProps<{
-  show: boolean
+  show: boolean,
+  product?: any 
 }>()
 const emits = defineEmits(['close', 'saved'])
-
-const form = ref({
+interface Product {
+  id?: number
+  nombre: string
+  codigo: string
+  descripcion: string
+  precio_compra: number
+  precio_venta: number
+  stock: number
+  categoria_id: string | number
+}
+  
+const form = ref<Product>({
   nombre: '',
   codigo: '',
   descripcion: '',
@@ -76,10 +89,23 @@ watch(
   () => props.show,
   (val) => {
     if (val) {
-      resetForm()
       loadCategories()
+      if (!props.product) {
+        resetForm()
+      }
     }
   }
+)
+
+watch(
+  () => props.product,
+  (newProduct) => {
+    if (props.show && newProduct) {
+      // Si hay producto, lo clonamos al form
+      form.value = { ...newProduct }
+    }
+  },
+  { immediate: true }
 )
 
 function resetForm() {
@@ -98,7 +124,7 @@ async function submit() {
   try {
 
     Swal.fire({
-      title: 'Guardando producto...',
+       title: props.product && props.product.id ? 'Actualizando producto...' : 'Guardando producto...',
       text: 'Por favor espera',
       allowOutsideClick: false,
       didOpen: () => {
@@ -106,8 +132,14 @@ async function submit() {
       }
     });
 
-
-    await createProduct(form.value)
+    if (props.product && props.product.id) {
+      // Si tiene id, editar
+      await updateProduct({ ...form.value, id: props.product.id })
+    } else {
+      // Si no tiene id, crear
+      await createProduct(form.value)
+    }
+    
     Swal.close(); 
     Swal.fire({
       icon: 'success',

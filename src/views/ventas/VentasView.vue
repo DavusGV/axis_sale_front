@@ -155,7 +155,13 @@ async function registrarVenta({ pago, metodo_pago }) {
           class="producto-card bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col p-3 h-56"
         >
           <img :src="producto.imagen || defaultImg" class="w-16 h-16 rounded mb-2 object-cover mx-auto block" />
-          <span class="font-semibold " :title="producto.descripcion">{{ producto.nombre }}</span>
+          <span
+            class="font-semibold truncate"
+            :title="producto.descripcion"
+            style="display:block; max-width: 100%;"
+          >
+            {{ producto.nombre }}
+          </span>
           <span class="text-xs text-gray-400">{{ producto.codigo ?? 'Sin código' }}</span>
           <span class="font-bold mt-1">${{ Number(producto.precio_venta).toFixed(2) }}</span>
           <button
