@@ -36,7 +36,7 @@ const loadProducts = async () => {
   loading.value = true
   const res = await fetchProducts()
   productos.value =  res.data;
-  console.log(productos.value)
+  //console.log(productos.value)
 }
 
 function agregarAlCarrito(producto) {
@@ -48,6 +48,7 @@ function agregarAlCarrito(producto) {
       producto_id: producto.id,
       nombre: producto.nombre,
       precio: producto.precio_venta,
+      precio_compra: producto.precio_compra,
       cantidad: 1,
       imagen: producto.imagen
     })
@@ -82,7 +83,8 @@ async function registrarVenta({ pago, metodo_pago }) {
   const detalles = carrito.value.map(item => ({
     producto_id: item.producto_id,
     cantidad: item.cantidad,
-    precio: item.precio
+    precio: item.precio,
+    precio_compra: item.precio_compra
   }))
 
   try {

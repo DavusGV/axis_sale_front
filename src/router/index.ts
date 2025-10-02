@@ -104,6 +104,7 @@ import TableViewUsuarios from '@/views/table/TableViewUsuarios.vue';
 import ProductosView from '@/views/configuracion/ProductsView.vue';
 import CajasView from '@/views/cajas/CajasView.vue';
 import VentasView from '@/views/ventas/VentasView.vue';
+import ReporteVentasView from "@/views/reportes/ReporteVentasView.vue";
 
 
 
@@ -766,6 +767,12 @@ const router = createRouter({
       path: '/ventas',
       name: 'ventas',
       component: VentasView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/reportes/ventas',
+      name: 'ventas',
+      component: ReporteVentasView,
       meta: { requiresAuth: true } 
     },
   ],

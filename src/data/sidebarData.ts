@@ -55,16 +55,15 @@ export const sidebarData = [
                     { title: "Ventas", url: "/ventas" }
                 ],
             },
-/*             {
+            {
                 id: 1,
-                name: "Personal",
-                icon: IconHome2,
+                name: "Reportes",
+                icon: IconReportAnalytics,
                 submenus: [
-                    { title: "Personal Style 01", url: "/dashboards/personal-1" },
-                    { title: "Personal Style 02", url: "/dashboards/personal-2" },
-                    { title: "Personal Style 03", url: "/dashboards/personal-3" },
+                    { title: "Ventas", url: "/reportes/ventas" },
                 ],
-            }, */
+            },
+
           /*   {
                 id: 2,
                 name: "Finance",
