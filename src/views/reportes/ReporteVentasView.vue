@@ -7,6 +7,8 @@ import ProgressOverivew from '@/components/dashboards/personal-1/ProgressOverive
 import BrowserSessions from '@/components/dashboards/personal-1/BrowserSessions.vue'
 import { IconCalendarPlus } from '@tabler/icons-vue'
 import { getSales } from '@/api/reports'
+import ProductosBarChart from '@/components/reportes/ventas/ProductosBarChart.vue'
+
 
 
 // Helpers para fechas
@@ -95,8 +97,8 @@ onMounted(cargarReporte)
     <!-- Stat Boxes, pásales los totales -->
     <StatBoxesVue :totales="data.totales" />
 
-    <!-- <div class="grid grid-cols-12 gap-4 xxxl:gap-6 mt-4 lg:mt-6">
-      <div class="col-span-12 lg:col-span-6">
+     <div class="grid grid-cols-12 gap-4 xxxl:gap-6 mt-4 lg:mt-6">
+      <!--<div class="col-span-12 lg:col-span-6">
         <MonthlyRevenueChartVue :productos="data.productos" />
       </div>
       <div class="col-span-12 lg:col-span-6">
@@ -104,10 +106,10 @@ onMounted(cargarReporte)
       </div>
       <div class="col-span-12 lg:col-span-6">
         <ProgressOverivew />
+      </div>-->
+      <div class="col-span-12 lg:col-span-12">
+        <ProductosBarChart :productos="data.productos" />
       </div>
-      <div class="col-span-12 lg:col-span-6">
-        <BrowserSessions />
-      </div>
-    </div> -->
+    </div>
   </main>
 </template>

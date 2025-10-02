@@ -770,6 +770,12 @@ const router = createRouter({
       meta: { requiresAuth: true } 
     },
     {
+      path: '/ventas/ventas',
+      name: 'ventas2',
+      component: VentasView,
+      meta: { requiresAuth: true } 
+    },
+    {
       path: '/reportes/ventas',
       name: 'ventas',
       component: ReporteVentasView,

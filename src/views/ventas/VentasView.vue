@@ -131,6 +131,7 @@ async function registrarVenta({ pago, metodo_pago }) {
 </script>
 
 <template>
+  
   <TopBanner title="Ventas">
   </TopBanner>
   <div class="ventas-container flex flex-col md:flex-row gap-6">

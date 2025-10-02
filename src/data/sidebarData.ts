@@ -52,7 +52,7 @@ export const sidebarData = [
                 submenus: [
                     { title: "Productos", url: "/configuracion/productos" },
                     { title: "Cajas", url: "/cajas" },
-                    { title: "Ventas", url: "/ventas" }
+                    { title: "Ventas", url: "/ventas/ventas" }
                 ],
             },
             {

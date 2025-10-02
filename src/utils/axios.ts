@@ -22,4 +22,19 @@ axiosInstance.interceptors.request.use(
 )
 
 
+// Interceptor de respuesta: maneja el 401 globalmente
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Limpia token y otros datos si es necesario
+      localStorage.removeItem('token');
+      // Redirige al login
+      router.push({ name: 'login' }); // O router.push('/login') según tengas tu router
+    }
+    return Promise.reject(error);
+  }
+);
+
+
 export default axiosInstance;
