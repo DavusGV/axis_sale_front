@@ -37,6 +37,7 @@ export const sidebarData = [
                     { title: "Permisos", url: "/permisos" },
                     { title: "Roles", url: "/roles" },
                     { title: "Usuarios", url: "/usuarios" },
+                    { title: "Negocios", url: "/negocios" },
                 ],
             }
         ],
