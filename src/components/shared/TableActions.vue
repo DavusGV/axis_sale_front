@@ -39,14 +39,7 @@ const toggleOpen = () => {
           @click="props.onDelete"
           class="py-2 w-full text-left hover:bg-primary/10 rounded-md hover:text-primary duration-300 block px-3"
         >
-          Delete
-        </button>
-      </li>
-      <li>
-        <button
-          class="py-2 w-full text-left hover:bg-primary/10 rounded-md hover:text-primary duration-300 block px-3"
-        >
-          Block
+          Eliminar
         </button>
       </li>
     </ul>

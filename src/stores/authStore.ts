@@ -27,11 +27,11 @@ export const useAuthStore = defineStore('auth', () => {
       Swal.fire({
         icon: 'success',
         title: `¡Hola ${user.value.name}!`,
-        text: 'Bienvenido a RoomEasy',
+        text: 'Bienvenido de nuevo',
         color: '#2E7D32',
         confirmButtonColor: '#2E7D32'
       })
-      router.push('/ventas')
+      router.push('/ventas/ventas')
     } catch (error) {
       loading.value = false
       if (error.response && error.response.status === 401) {
