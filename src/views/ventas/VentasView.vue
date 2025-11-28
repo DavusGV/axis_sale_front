@@ -50,7 +50,7 @@ function agregarAlCarrito(producto) {
       precio: producto.precio_venta,
       precio_compra: producto.precio_compra,
       cantidad: 1,
-      imagen: producto.imagen
+      imagen: producto.imagen_url
     })
   }
 }
@@ -157,7 +157,7 @@ async function registrarVenta({ pago, metodo_pago }) {
           :key="producto.id"
           class="producto-card bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col p-3 h-56"
         >
-          <img :src="producto.imagen || defaultImg" class="w-16 h-16 rounded mb-2 object-cover mx-auto block" />
+          <img :src="producto.imagen_url || defaultImg" class="w-16 h-16 rounded mb-2 object-cover mx-auto block" />
           <span
             class="font-semibold truncate"
             :title="producto.descripcion"
