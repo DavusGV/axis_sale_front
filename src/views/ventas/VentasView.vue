@@ -6,9 +6,11 @@ import Cart from '@/components/ventas/Cart.vue'
 import ResumenVenta from '@/components/ventas/ResumenVenta.vue'
 import ModalPago from '@/components/ventas/ModalPago.vue'
 import { buscarPorCodigoBarras, registrarVenta, fetchProducts } from '@/api/ventas'
+import { useAuthStore } from '@/stores/authStore'
 import Swal from 'sweetalert2'
 
 // VARIABLES EXISTENTES
+const authStore = useAuthStore()
 const productos = ref([])
 const search = ref('')
 const carrito = ref([])
@@ -32,6 +34,19 @@ watch(search, () => {
   page.value = 1
   loadProducts()
 })
+
+// Escucha el cambio de establecimiento seleccionado y vuelve a solicitar
+// los productos correspondientes a ese establecimiento
+watch(
+  () => authStore.establishmentActive,
+  async (newVal, oldVal) => {
+    if (!newVal || newVal === oldVal) return
+
+    page.value = 1
+    await loadProducts()
+  }
+)
+
 onMounted(async () => {
   await loadProducts()
   iniciarEscuchaScanner() // Activar scanner automático
@@ -317,6 +332,7 @@ async function registrarVentaLocal({ pago, metodo_pago }: any) {
             class="btn justify-center"
             @click="agregarAlCarrito(producto)"
           >
+          <i class="far fa-plus"></i>
             Agregar
           </button>
         </div>

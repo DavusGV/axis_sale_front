@@ -24,9 +24,8 @@ export async function fetchProducts(params: ProductFilters = {}) {
 //vamos a crear una función para obtener las categorías
 export async function fetchCategories() {
   const res = await axiosInstance.get('/category/', {
-
-  })
-  return res.data // { data: [...], total: ... }
+})
+  return res.data 
 }
 
 //función para crear un producto

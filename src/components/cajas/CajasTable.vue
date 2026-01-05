@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { IconSearch } from '@tabler/icons-vue'
 import Pagination from '../shared/Pagination.vue'
 import { useTableFunctions } from '@/utils/tableFunction'
@@ -11,7 +11,10 @@ import CommonDropdown from '../shared/CommonDropdown.vue'
 import { fetchCajas } from '@/api/cajas' // Ajusta la ruta si es diferente
 import AbrirCajaModal from '@/components/cajas/AbrirCajaModal.vue'
 import CerrarCajaModal from '@/components/cajas/CerrarCajaModal.vue'
+import { useAuthStore } from '@/stores/authStore'
 
+
+const authStore = useAuthStore()
 // Carga y manejo de datos desde la API
 const cajas = ref([])
 const isLoading = ref(true)
@@ -70,6 +73,16 @@ async function onCajaSaved() {
     isLoading.value = false
     setTableData(cajas.value) // Esta función debe llamar fetchCajas y setTableData
 }
+
+// Escucha el cambio de establecimiento seleccionado y vuelve a solicitar
+// los productos correspondientes a ese establecimiento
+watch(
+  () => authStore.establishmentActive,
+  async (newVal, oldVal) => {
+    if (!newVal || newVal === oldVal) return
+    await onCajaSaved()
+  }
+)
 
 </script>
 

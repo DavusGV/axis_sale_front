@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import Swal from 'sweetalert2'
 import FlexTable from '@/components/flex/FlexTable.vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
 import { fetchProducts, type ProductFilters, DestroyProduct } from '@/api/products'
+import { useAuthStore } from '@/stores/authStore'
 import ProductModal from '@/components/products/ProductsModal.vue'
 
 // ---------- STATE ----------
@@ -17,6 +18,8 @@ const loading = ref(false)
 const startIndex = ref(0)
 const endIndex = ref(0)
 const totalPages = ref(1)
+
+const authStore = useAuthStore()
 
 
 const columns = [
@@ -162,6 +165,15 @@ async function handleDelete(id: number) {
   }
 }
 
+// Escucha el cambio de establecimiento seleccionado y vuelve a solicitar
+// los productos correspondientes a ese establecimiento
+watch(
+  () => authStore.establishmentActive,
+  async (newVal, oldVal) => {
+    if (!newVal || newVal === oldVal) return
+    await loadProducts()
+  }
+)
 
 onMounted(loadProducts)
 </script>
@@ -169,7 +181,10 @@ onMounted(loadProducts)
 <template>
   <TopBanner title="Productos">
     <div class="flex justify-end gap-4 lg:gap-6">
-      <button class="btn" @click="openProductModal">Agregar</button>
+      <button class="btn" @click="openProductModal">
+        <i class="far fa-plus"></i>
+        Agregar
+      </button>
     </div>
   </TopBanner>
 

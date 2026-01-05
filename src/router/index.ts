@@ -105,6 +105,8 @@ import ProductosView from '@/views/configuracion/ProductsView.vue';
 import CajasView from '@/views/cajas/CajasView.vue';
 import VentasView from '@/views/ventas/VentasView.vue';
 import ReporteVentasView from "@/views/reportes/ReporteVentasView.vue";
+import EstablecimientoView from '@/views/establecimiento/EstablecimientoView.vue';
+import EditarUsuarioView from '@/views/usuarios/[id]/editarView.vue'
 
 
 
@@ -751,6 +753,12 @@ const router = createRouter({
       meta: { requiresAuth: true } 
     },
     {
+      path: '/usuarios/:id/editar',
+      name: 'usuarios-editar',
+      component: EditarUsuarioView,
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/configuracion/productos',
       name: 'productos',
       component: ProductosView,
@@ -781,6 +789,15 @@ const router = createRouter({
       component: ReporteVentasView,
       meta: { requiresAuth: true } 
     },
+    
+    {
+      path: '/establecimiento',
+      name: 'establecimiento',
+      component:  EstablecimientoView,
+      meta: { requiresAuth: true } 
+    },
+
+    
   ],
   scrollBehavior() {
     return { top: 0 }

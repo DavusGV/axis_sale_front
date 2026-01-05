@@ -6,12 +6,16 @@ import NotificationDropdown from '../topbar/NotificationDropdown.vue'
 import SwitchLanguage from '../topbar/SwitchLanguage.vue'
 import ProfileDropDown from '../topbar/ProfileDropDown.vue'
 import useWindowSize from '@/utils/useWindowSize'
+import { useAuthStore } from '@/stores/authStore'
+
 const { windowSize } = useWindowSize()
 const { theme } = useLayoutStore()
+const authStore = useAuthStore()
+
 defineProps<{
   isSidebarOpen: boolean
   toggleSidebar: () => void
-}>()
+}>() 
 </script>
 <template>
   <nav
@@ -28,14 +32,32 @@ defineProps<{
       <button @click="toggleSidebar">
         <IconMenu2 />
       </button>
-      <form class="bg-primary/5 dark:bg-bg3 hidden md:flex gap-3 rounded-[30px] border border-transparent focus-within:border-primary px-6 xxl:px-8 items-center justify-between max-w-[493px] w-full">
-        <input type="text" placeholder="Search" class="bg-transparent py-2 md:py-2.5 xxl:py-3 focus:outline-none w-full" />
-        <button>
-          <IconSearch :size="20" />
-        </button>
+
+      <form
+        class="bg-primary/5 dark:bg-bg3 hidden md:flex gap-3 rounded-[30px]
+              border border-transparent focus-within:border-primary
+              px-6 xxl:px-8 items-center justify-between
+              max-w-[493px] w-full"
+      >
+        <select
+          v-model="authStore.establishmentActive"
+          class="bg-transparent py-2 md:py-2.5 xxl:py-3
+                focus:outline-none w-full appearance-none cursor-pointer"
+        >
+          <option
+            v-for="est in authStore.establishments"
+            :key="est.id"
+            :value="est.id"
+          >
+            {{ est.nombre }}
+          </option>
+        </select>
+        <!-- Ícono del buscador (solo visual) -->
+        <IconSearch :size="20" class="pointer-events-none" />
       </form>
       <!-- <SelectLayout /> -->
     </div>
+
     <div class="flex items-center gap-3 sm:gap-4 xxl:gap-6">
       <ModeSwitcherVue />
       <NotificationDropdown />

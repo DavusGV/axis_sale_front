@@ -63,8 +63,8 @@ async function submit() {
     Swal.close();
     Swal.fire({
       icon: 'success',
-      title: '¡Caja abierta!',
-      text: 'La caja se abrió correctamente.',
+      title: '¡Caja Cerrada!',
+      text: 'La caja se cerro correctamente.',
       confirmButtonText: 'OK',
       confirmButtonColor: '#22c55e'
     })

@@ -233,24 +233,4 @@ async function submit() {
   border-radius: 4px;
   padding: 0.5em;
 }
-
-.drag-over {
-  background: #e7f1ff !important;
-  border-color: #0d6efd !important;
-}
-
-.btn {
-  background: #0d6efd;
-  color: #fff;
-  border-radius: 4px;
-  padding: 0.5em 1em;
-}
-
-.btn-outline {
-  border: 1px solid #0d6efd;
-  color: #0d6efd;
-  background: transparent;
-  border-radius: 4px;
-  padding: 0.5em 1em;
-}
 </style>

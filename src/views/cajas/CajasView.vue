@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { watch } from 'vue';
 import FlexListTwo from '@/components/cajas/CajasTable.vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
+import { useAuthStore } from '@/stores/authStore';
 /* import { RouterLink } from 'vue-router' */
 
 </script>

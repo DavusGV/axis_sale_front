@@ -14,8 +14,13 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
+    const establishmentActive = localStorage.getItem('establishmentActive')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
+    }
+    // Agregar el encabezado personalizado si establishmentActive existe
+    if (establishmentActive) {
+      config.headers['X-Establishment-ID'] = JSON.parse(establishmentActive)
     }
     return config
   },
@@ -30,6 +35,9 @@ axiosInstance.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // Limpia token y otros datos si es necesario
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('establishments');
+      localStorage.removeItem('establishmentActive');
       // Redirige al login
       router.push({ name: 'login' }); // O router.push('/login') según tengas tu router
     }
