@@ -5,7 +5,7 @@ import { onClickOutside } from '@vueuse/core'
 const props = defineProps<{
   fromBottom: boolean
   onDelete: () => void
-  onEdit: () => void 
+  onEdit?: () => void 
 }>()
 const openDropdown = ref(false)
 const target = ref(null)
@@ -26,7 +26,7 @@ const toggleOpen = () => {
       }"
       ref="target"
     >
-      <li>
+      <li v-if="props.onEdit">
         <button
           @click="props.onEdit"
           class="py-2 w-full text-left hover:bg-primary/10 rounded-md hover:text-primary duration-300 block px-3"

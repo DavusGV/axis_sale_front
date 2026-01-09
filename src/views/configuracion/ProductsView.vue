@@ -153,7 +153,7 @@ async function handleDelete(id: number) {
       // recargar lista
       await loadProducts()
 
-    } catch (error) {
+    } catch (error: any) {
       Swal.fire({
         title: 'Advertencia',
         text: 'No se pudo eliminar el producto',

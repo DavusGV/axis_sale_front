@@ -54,7 +54,7 @@ onMounted(cargarReporte)
     <div class="flex items-end gap-4 mb-6 bg-white/70 dark:bg-bg4 p-4 rounded-xl border border-n200 shadow-sm">
     <div class="flex flex-col">
       <label class="block text-xs font-semibold mb-1 flex items-center gap-2 text-gray-700 dark:text-gray-100">
-        <IconCalendarPlus class="inline-block" size="18" />
+        <IconCalendarPlus class="inline-block" :size="18" />
         Fecha inicio
       </label>
       <input
@@ -69,7 +69,7 @@ onMounted(cargarReporte)
     </div>
     <div class="flex flex-col">
       <label class="block text-xs font-semibold mb-1 flex items-center gap-2 text-gray-700 dark:text-gray-100">
-        <IconCalendarPlus class="inline-block" size="18" />
+        <IconCalendarPlus class="inline-block" :size="18" />
         Fecha fin
       </label>
       <input

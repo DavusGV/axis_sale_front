@@ -5,7 +5,7 @@ import OptionsVertical from '../shared/OptionsVertical.vue';
 const handleFocus = (e: any) => {
   try {
     e.currentTarget.showPicker()
-  } catch (error) {
+  } catch (error: any) {
     console.log(error)
   }
 }

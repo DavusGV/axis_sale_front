@@ -51,7 +51,7 @@ async function loadEstablecimientos() {
     }
 
 
-  } catch (error) {
+  } catch (error: any) {
     Swal.fire('Error', 'No se pudieron cargar los establecimientos', 'error')
   } finally {
     loading.value = false

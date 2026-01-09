@@ -16,7 +16,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 const authStore = useAuthStore()
 // Carga y manejo de datos desde la API
-const cajas = ref([])
+const cajas = ref<any[]>([])
 const isLoading = ref(true)
 const error = ref('')
 const showModal = ref(false)
@@ -71,7 +71,7 @@ async function onCajaSaved() {
     cajas.value = res.data      // Ajusta según la respuesta de tu API
     // Si tu API retorna solo el array, usa: cajas.value = res
     isLoading.value = false
-    setTableData(cajas.value) // Esta función debe llamar fetchCajas y setTableData
+    tableData.value = cajas.value // Actualiza los datos de la tabla
 }
 
 // Escucha el cambio de establecimiento seleccionado y vuelve a solicitar

@@ -140,7 +140,7 @@ const form = ref<any>({
 const previewImage = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
-const categories = ref([])
+const categories = ref<any[]>([])
 
 watch(() => props.show, async (val) => {
   if (val) {

@@ -55,7 +55,7 @@ const color = ref(colors[0].text)
 const handleFocus = (e: any) => {
   try {
     e.currentTarget.showPicker()
-  } catch (error) {
+  } catch (error: any) {
     console.log(error)
   }
 }

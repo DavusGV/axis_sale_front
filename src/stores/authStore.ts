@@ -71,7 +71,7 @@ export const useAuthStore = defineStore('auth', () => {
         })
         router.push('/ventas/ventas')
 
-    } catch (error) {
+    } catch (error: any) {
       loading.value = false
       if (error.response && error.response.status === 401) {
         Swal.fire({
@@ -102,7 +102,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       router.push('/login')
-    } catch (error) {
+    } catch (error: any) {
       Swal.fire({
         icon: 'error',
         title: 'Error al cerrar sesión',

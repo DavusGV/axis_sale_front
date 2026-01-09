@@ -13,7 +13,7 @@ defineProps<{ totales: any }>()
     >
       <div class="flex gap-4 xxxl:gap-6 items-center">
         <span class="p-3 inline-flex rounded-2xl bg-primary/10 dark:bg-bg3 text-primary">
-          <component size="32" :is="IconCoin"></component>
+          <component :size="32" :is="IconCoin"></component>
         </span>
         <div>
           <p class="mb-3">Total de inversion</p>
@@ -28,7 +28,7 @@ defineProps<{ totales: any }>()
     >
       <div class="flex gap-4 xxxl:gap-6 items-center">
         <span class="p-3 inline-flex rounded-2xl bg-primary/10 dark:bg-bg3 text-primary">
-          <component size="32" :is="IconChartHistogram"></component>
+          <component :size="32" :is="IconChartHistogram"></component>
         </span>
         <div>
           <p class="mb-3">Total Vendido</p>
@@ -56,7 +56,7 @@ defineProps<{ totales: any }>()
     >
       <div class="flex gap-4 xxxl:gap-6 items-center">
         <span class="p-3 inline-flex rounded-2xl bg-primary/10 dark:bg-bg3 text-primary">
-          <component size="32" :is="IconReportAnalytics"></component>
+          <component :size="32" :is="IconReportAnalytics"></component>
         </span>
         <div>
           <p class="mb-3">Total Ganancia</p>

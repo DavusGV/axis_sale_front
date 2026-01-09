@@ -4,7 +4,7 @@ import CommonDropdown from '../shared/CommonDropdown.vue'
 const handleFocus = (e: any) => {
   try {
     e.currentTarget.showPicker()
-  } catch (error) {
+  } catch (error: any) {
     console.log(error)
   }
 }

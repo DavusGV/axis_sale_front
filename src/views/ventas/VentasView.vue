@@ -11,9 +11,9 @@ import Swal from 'sweetalert2'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
-const productos = ref([])
+const productos = ref<any[]>([])
 const search = ref('')
-const carrito = ref([])
+const carrito = ref<any[]>([])
 const page = ref(1)
 const lastPage = ref(1)
 const total = computed(() => carrito.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0))
