@@ -38,7 +38,7 @@ export async function createProduct(product: any) {
     }
   })
 
-  const res = await axiosInstance.post("/products/", form, {
+  const res = await axiosInstance.post("/products", form, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 
