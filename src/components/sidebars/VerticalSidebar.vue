@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AnimateHeight from 'vue-animate-height'
+import { useAuthStore } from '@/stores/authStore';
 const activeMenu = ref('')
 const { theme } = useLayoutStore()
+// esto solo se esta agregando para ocultar el IAM para todos los uauarios excepto uno
+const { isMainUser } =useAuthStore ()
 const props = defineProps<{
   isSidebarOpen: boolean
   toggleSidebar: () => void
@@ -14,6 +17,16 @@ import { IconChevronRight, IconX, IconLogout } from '@tabler/icons-vue'
 import { sidebarData } from '@/data/sidebarData'
 import useWindowSize from '@/utils/useWindowSize'
 import { useLayoutStore } from '@/stores/layoutStore'
+
+//agregamos este filtro para ocultar IAM
+const filteredSidebarData = computed(() => {
+  return sidebarData.filter(sidebar => {
+    if (sidebar.title === 'IAM') {
+      return isMainUser
+    }
+    return true
+  })
+})
 
 const router = useRouter()
 const pathName = ref(router.currentRoute.value.fullPath)
@@ -86,7 +99,10 @@ const isActive = (submenus: any[]) => {
       </div>
       <div class="overflow-y-auto fixed right-0 left-0 h-full">
         <div class="px-4 xxl:px-6 xxxl:px-8 pb-24">
-          <div v-for="sidebar in sidebarData" :key="sidebar.id">
+          <!-- se modifico el v-for para ocultar IAM -->
+          <div v-for="sidebar in filteredSidebarData" :key="sidebar.id">
+          <!--este es anteriror que tenia-->
+          <!-- <div v-for="sidebar in sidebarData" :key="sidebar.id"> -->
             <p class="text-xs font-semibold py-4 xl:py-5 border-t-2 border-dashed border-primary/20">
               {{ sidebar.title }}
             </p>

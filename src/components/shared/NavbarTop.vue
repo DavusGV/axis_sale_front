@@ -29,34 +29,51 @@ defineProps<{
     }"
   >
     <div class="flex grow md:gap-4 xxl:gap-6 items-center">
-      <button @click="toggleSidebar">
+      <button
+        @click="toggleSidebar"
+        class="text-gray-600 dark:text-gray-300 hover:text-primary transition"
+      >
         <IconMenu2 />
       </button>
 
       <form
-        class="bg-primary/5 dark:bg-bg3 hidden md:flex gap-3 rounded-[30px]
-              border border-transparent focus-within:border-primary
-              px-6 xxl:px-8 items-center justify-between
-              max-w-[493px] w-full"
+        class="relative hidden md:flex items-center w-full max-w-[493px]
+              rounded-full px-6 xxl:px-8
+              bg-primary/5 dark:bg-bg3
+              border border-transparent
+              hover:border-primary/40
+              focus-within:border-primary
+              transition-colors"
       >
         <select
           v-model="authStore.establishmentActive"
-          class="bg-transparent py-2 md:py-2.5 xxl:py-3
-                focus:outline-none w-full appearance-none cursor-pointer"
+          class="w-full pr-10 appearance-none bg-transparent
+                py-2 md:py-2.5 xxl:py-3
+                text-sm font-semibold
+                text-gray-800 dark:text-gray-100
+                focus:outline-none cursor-pointer"
         >
           <option
             v-for="est in authStore.establishments"
             :key="est.id"
             :value="est.id"
+            class="bg-white dark:bg-bg4
+                  text-gray-800 dark:text-gray-100"
           >
             {{ est.nombre }}
           </option>
         </select>
-        <!-- Ícono del buscador (solo visual) -->
-        <IconSearch :size="20" class="pointer-events-none" />
+
+        <!-- Font Awesome dropdown icon -->
+        <span
+          class="absolute right-5 pointer-events-none
+                text-gray-500 dark:text-gray-400"
+        >
+          <i class="fa-solid fa-chevron-down text-xs"></i>
+        </span>
       </form>
-      <!-- <SelectLayout /> -->
     </div>
+
 
     <div class="flex items-center gap-3 sm:gap-4 xxl:gap-6">
       <ModeSwitcherVue />

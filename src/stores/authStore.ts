@@ -1,4 +1,4 @@
-import { ref, watch  } from 'vue'
+import { computed, ref, watch  } from 'vue'
 import { defineStore } from 'pinia'
 import axiosInstance from '@/utils/axios'
 import Swal from 'sweetalert2'
@@ -12,6 +12,11 @@ export const useAuthStore = defineStore('auth', () => {
   const establishmentActive = ref<number | null>(JSON.parse(localStorage.getItem('establishmentActive') || 'null'))
   const loading = ref(false)
   const router = useRouter()
+
+  // validamos que el id del usuario sea igual a 1 
+  const isMainUser = computed(() => {
+    return user.value?.id === 1
+  })
 
   const login = async (email: string, password: string) => {
     loading.value = true
@@ -121,5 +126,5 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
 
-  return { token, user, establishments, establishmentActive, loading, login, logout }
+  return { token, user, isMainUser, establishments, establishmentActive, loading, login, logout }
 })

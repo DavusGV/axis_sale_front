@@ -18,8 +18,6 @@ export async function fetchProducts(params: ProductFilters = {}) {
   return res.data
 }
 
-
-
 // Puedes agregar aquí las funciones para crear, editar y eliminar si lo necesitas después.
 //vamos a crear una función para obtener las categorías
 export async function fetchCategories() {
@@ -37,7 +35,6 @@ export async function createProduct(product: any) {
       form.append(key, product[key])
     }
   })
-
   const res = await axiosInstance.post("/products", form, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
