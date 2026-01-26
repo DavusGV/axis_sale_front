@@ -129,6 +129,7 @@ async function procesarCodigoEscaneado() {
         
       })
     }
+    
   } catch (error: any) {
     const mensaje = error.response?.data?.message || "Error desconocido"
     Swal.fire({
@@ -224,6 +225,8 @@ function abrirModalPago() {
   showModalPago.value = true
 }
 
+
+// falta mandar el establecimiento a la venta
 async function registrarVentaLocal({ pago, metodo_pago }: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const usuario_id = user.id

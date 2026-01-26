@@ -36,8 +36,8 @@ export const sidebarData = [
                 submenus: [
                     { title: "Permisos", url: "/permisos" },
                     { title: "Roles", url: "/roles" },
-                    { title: "Usuarios", url: "/usuarios" },
                     { title: "Establecimiento", url: "/establecimiento" },
+                    { title: "Usuarios", url: "/usuarios" }, 
                 ],
             }
         ],

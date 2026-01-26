@@ -109,9 +109,6 @@ import EstablecimientoView from '@/views/establecimiento/EstablecimientoView.vue
 import EditarUsuarioView from '@/views/usuarios/[id]/editarView.vue'
 
 
-
-
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
