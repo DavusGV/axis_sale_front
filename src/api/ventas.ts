@@ -33,7 +33,11 @@ export interface ProductFilters {
   categoria_id?: number | string
 }
 
-
+export interface payload {
+  year: number
+  month: number
+  idestablishment: number
+}
 
 export async function fetchProducts(params: ProductFilters = {}) {
   const res = await axiosInstance.get('/ventas/products', {
@@ -58,3 +62,9 @@ export async function registrarVenta(ventaData: VentaData) {
   return res.data
 }
 
+
+//función para obtener las ventas del dia
+export async function getIncome(payload: payload) {
+  const res = await axiosInstance.post('/finance/getIncome', payload)
+  return res.data
+}

@@ -30,7 +30,8 @@
             focus:border-green-500 focus:ring-1 focus:ring-green-400 transition"
           >
             <option value="efectivo">Efectivo</option>
-            <!-- <option value="tarjeta">Tarjeta</option> -->
+            <option value="tarjeta">Tarjeta</option>
+            <option value="transferencia">Transferencia</option>
           </select>
         </div>
       </div>
