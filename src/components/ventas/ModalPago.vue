@@ -166,7 +166,8 @@ watch(descuento, (v) => {
 })
 
 watch([descuento, tipoDescuento], () => {
-  if (tipoDescuento.value === 'porcentaje') {
+  if (tipoDescuento.value === 'porcentaje' && descuento.value > 0) {
+    descuento.value = Math.round(descuento.value) // Redondear a entero
     if (descuento.value > 100) descuento.value = 100
     if (descuento.value < 0) descuento.value = 0
   }

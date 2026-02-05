@@ -227,17 +227,13 @@ function abrirModalPago() {
 async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuento, descuento_aplicado, total_final }: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const usuario_id = user.id
-  const cambio = pago - total.value
+  const cambio = pago - total_final
   
   const detalles = carrito.value.map(item => ({
     producto_id: item.producto_id,
     cantidad: item.cantidad,
     precio: item.precio,
     precio_compra: item.precio_compra,
-    tipo_descuento : tipo_descuento,
-    descuento : descuento,
-    descuento_aplicado : descuento_aplicado,
-    total_final : total_final
   }))
 
   const ventaData = {
@@ -246,7 +242,11 @@ async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuent
     pago,
     cambio,
     metodo_pago,
-    detalles
+    detalles,
+    tipo_descuento : tipo_descuento,
+    descuento : descuento,
+    descuento_aplicado : descuento_aplicado,
+    total_final : total_final
   }
 
   try {
