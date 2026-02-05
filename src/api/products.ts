@@ -21,7 +21,7 @@ export async function fetchProducts(params: ProductFilters = {}) {
 // Puedes agregar aquí las funciones para crear, editar y eliminar si lo necesitas después.
 //vamos a crear una función para obtener las categorías
 export async function fetchCategories() {
-  const res = await axiosInstance.get('/category/', {
+  const res = await axiosInstance.get('/category', {
 })
   return res.data 
 }

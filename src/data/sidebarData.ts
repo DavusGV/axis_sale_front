@@ -57,25 +57,25 @@ export const sidebarData = [
                 ],
             },
             {
-                id: 1,
+                id: 2,
+                name: "Finanzas",
+                icon: IconCoins,
+                submenus: [
+                    { title: "Tipo de Gasto", url: "/dashboards/analytics" },
+                    { title: "Gastos", url: "/dashboards/analytics" },
+                    { title: "Ingresos", url: "/finanzas/ingresos" },
+                    { title: "Balance", url: "/dashboards/stock" },
+                ],
+            },
+            {
+                id: 2,
                 name: "Reportes",
                 icon: IconReportAnalytics,
                 submenus: [
                     { title: "Ventas", url: "/reportes/ventas" },
                 ],
             },
-
-          /*   {
-                id: 2,
-                name: "Finance",
-                icon: IconCoins,
-                submenus: [
-                    { title: "analytics Dashboard", url: "/dashboards/analytics" },
-                    { title: "Stock Dashboard", url: "/dashboards/stock" },
-                    { title: "Sales Dashboard", url: "/dashboards/sales" },
-                ],
-            },
-            {
+         /*    {
                 id: 3,
                 name: "Banking",
                 icon: IconBuildingBank,

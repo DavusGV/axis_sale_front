@@ -107,6 +107,7 @@ import VentasView from '@/views/ventas/VentasView.vue';
 import ReporteVentasView from "@/views/reportes/ReporteVentasView.vue";
 import EstablecimientoView from '@/views/establecimiento/EstablecimientoView.vue';
 import EditarUsuarioView from '@/views/usuarios/[id]/editarView.vue'
+import IngresosView from "@/views/finanzas/IngresosView.vue";
 
 
 const router = createRouter({
@@ -786,11 +787,16 @@ const router = createRouter({
       component: ReporteVentasView,
       meta: { requiresAuth: true } 
     },
-    
     {
       path: '/establecimiento',
       name: 'establecimiento',
       component:  EstablecimientoView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/Finanzas/ingresos',
+      name: 'ingresos',
+      component:  IngresosView,
       meta: { requiresAuth: true } 
     },
 
