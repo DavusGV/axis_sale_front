@@ -5,6 +5,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import Cart from '@/components/ventas/Cart.vue'
 import ResumenVenta from '@/components/ventas/ResumenVenta.vue'
 import ModalPago from '@/components/ventas/ModalPago.vue'
+import ModalDescuentoProducto from '@/components/ventas/ModalDescuentoProducto.vue'
 import { buscarPorCodigoBarras, registrarVenta, fetchProducts } from '@/api/ventas'
 import { useAuthStore } from '@/stores/authStore'
 import Swal from 'sweetalert2'
@@ -16,7 +17,40 @@ const search = ref('')
 const carrito = ref<any[]>([])
 const page = ref(1)
 const lastPage = ref(1)
-const total = computed(() => carrito.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0))
+
+// El total se recalcula dinamicamente usando descuento y tipo_descuento
+// para que al cambiar la cantidad el descuento se ajuste correctamente
+const total = computed(() =>
+  carrito.value.reduce((acc, item) => {
+    const subtotal = item.precio * item.cantidad
+    let descAplicado = 0
+
+    if (item.tipo_descuento === 'porcentaje') {
+      descAplicado = subtotal * ((item.descuento ?? 0) / 100)
+    } else if (item.tipo_descuento === 'monto') {
+      descAplicado = item.descuento ?? 0
+    }
+
+    return acc + (subtotal - descAplicado)
+  }, 0)
+)
+
+// helper para actualizar los precios de forma automatica de los producto
+const carritoConDescuento = computed(() =>
+  carrito.value.map(item => {
+    const subtotal = item.precio * item.cantidad
+    let desc_aplicado = 0
+
+    if (item.tipo_descuento === 'porcentaje') {
+      desc_aplicado = subtotal * ((item.descuento ?? 0) / 100)
+    } else if (item.tipo_descuento === 'monto') {
+      desc_aplicado = item.descuento ?? 0
+    }
+
+    return { ...item, descuento_aplicado: desc_aplicado }
+  })
+)
+
 const showModalPago = ref(false)
 const defaultImg = '/images/home/vuejs.png'
 const loading = ref(false)
@@ -28,6 +62,10 @@ const TIEMPO_ESPERA_SCANNER = 100
 
 //filtrado desde el backend
 const filteredProductos = computed(() => productos.value)
+
+// variable para el producto al que se le aplicara descuento individual
+const productoDescuento = ref<any>(null)
+const showModalDescuentoProducto = ref(false)
 
 // recargamos productos cuando cambia la busqueda
 watch(search, () => {
@@ -49,14 +87,14 @@ watch(
 
 onMounted(async () => {
   await loadProducts()
-  iniciarEscuchaScanner() // Activar scanner automático
+  iniciarEscuchaScanner() // Activar scanner automatico
 })
 
 onUnmounted(() => {
   detenerEscuchaScanner()
 })
 
-//FUNCIONES DEL SCANNER 
+//FUNCIONES DEL SCANNER
 function iniciarEscuchaScanner() {
   document.addEventListener('keydown', manejarTeclaScanner)
 }
@@ -67,25 +105,25 @@ function detenerEscuchaScanner() {
 }
 
 function manejarTeclaScanner(event: KeyboardEvent) {
-  // Ignorar si el usuario está escribiendo en el input de búsqueda
-  if (event.target instanceof HTMLInputElement || 
+  // Ignorar si el usuario esta escribiendo en el input de busqueda
+  if (event.target instanceof HTMLInputElement ||
       event.target instanceof HTMLTextAreaElement) {
     return
   }
 
-  // Solo procesar teclas numéricas y Enter
+  // Solo procesar teclas numericas y Enter
   if ((event.key >= '0' && event.key <= '9') || event.key === 'Enter') {
-    
+
     if (event.key === 'Enter') {
       procesarCodigoEscaneado()
       event.preventDefault()
     } else {
       codigoBuffer += event.key
-      
+
       if (timeoutScanner) clearTimeout(timeoutScanner)
-      
+
       timeoutScanner = setTimeout(() => {
-        if (codigoBuffer.length >= 3) { // Mínimo 3 dígitos
+        if (codigoBuffer.length >= 3) { // Minimo 3 digitos
           procesarCodigoEscaneado()
         } else {
           codigoBuffer = ''
@@ -97,17 +135,17 @@ function manejarTeclaScanner(event: KeyboardEvent) {
 
 async function procesarCodigoEscaneado() {
   if (!codigoBuffer) return
-  
+
   const codigo = codigoBuffer
   codigoBuffer = '' // Limpiar buffer
 
   try {
     // buscamos el producto por codigo de barra
     const resultado = await buscarPorCodigoBarras(codigo)
-    
+
     if (resultado.success && resultado.producto) {
       agregarAlCarrito(resultado.producto)
-      
+
       Swal.fire({
         icon: 'success',
         title: 'Producto agregado',
@@ -118,15 +156,12 @@ async function procesarCodigoEscaneado() {
         timer: 1000
       })
     } else {
-      
       Swal.fire({
         icon: 'error',
         title: 'Producto no encontrado',
-        text: resultado.message || 'Código no válido',
+        text: resultado.message || 'Codigo no valido',
         showConfirmButton: false,
         timer: 2000
-
-        
       })
     }
   } catch (error: any) {
@@ -146,7 +181,7 @@ function agregarAlCarrito(producto: any) {
   const idx = carrito.value.findIndex(item => item.producto_id === producto.id)
   const cantidadActual = idx !== -1 ? carrito.value[idx].cantidad : 0
 
-  // validamos el stock si hay productos disponibles 
+  // validamos el stock si hay productos disponibles
   if (cantidadActual + 1 > producto.stock) {
     Swal.fire({
       icon: 'warning',
@@ -166,16 +201,15 @@ function agregarAlCarrito(producto: any) {
       precio: producto.precio_venta,
       precio_compra: producto.precio_compra,
       cantidad: 1,
-      stock: producto.stock, // opcional pero útil en frontend
+      stock: producto.stock, // opcional pero util en frontend
       imagen: producto.imagen_url || defaultImg
     })
   }
 }
 
-
 const loadProducts = async () => {
   loading.value = true
-  const res = await fetchProducts({ page: page.value, search: search.value})
+  const res = await fetchProducts({ page: page.value, search: search.value })
   productos.value = res.data
   lastPage.value = res.last_page
   page.value = res.current_page
@@ -212,7 +246,7 @@ function abrirModalPago() {
   if (!carrito.value.length) {
     Swal.fire({
       icon: 'warning',
-      title: 'Carrito vacío',
+      title: 'Carrito vacio',
       text: 'Agrega productos al carrito primero',
       toast: true,
       position: 'top-end',
@@ -224,29 +258,68 @@ function abrirModalPago() {
   showModalPago.value = true
 }
 
-async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuento, descuento_aplicado, total_final }: any) {
+function abrirDescuentoProducto(producto_id: number) {
+  const item = carrito.value.find(i => i.producto_id === producto_id)
+  if (!item) return
+  productoDescuento.value = item
+  showModalDescuentoProducto.value = true
+}
+
+function aplicarDescuentoProducto({ descuento_aplicado, tipo_descuento, descuento }: any) {
+  const item = carrito.value.find(i => i.producto_id === productoDescuento.value?.producto_id)
+  if (!item) return
+
+  // guardamos el descuento en el item del carrito
+  item.descuento = descuento
+  item.tipo_descuento = tipo_descuento
+  item.descuento_aplicado = descuento_aplicado
+
+  showModalDescuentoProducto.value = false
+  productoDescuento.value = null
+}
+
+async function registrarVentaLocal({ pago, metodo_pago, total_final }: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const usuario_id = user.id
+
+  // cambio calculado contra el total ya con descuentos aplicados por producto
   const cambio = pago - total_final
-  
-  const detalles = carrito.value.map(item => ({
-    producto_id: item.producto_id,
-    cantidad: item.cantidad,
-    precio: item.precio,
-    precio_compra: item.precio_compra,
-  }))
+
+  // Recalculamos descuento_aplicado por item en el momento del registro
+  // para que refleje la cantidad actual y no un valor desactualizado
+  const detalles = carrito.value.map(item => {
+    const subtotalBruto = item.precio * item.cantidad
+    let desc_aplicado = 0
+
+    if (item.tipo_descuento === 'porcentaje') {
+      desc_aplicado = subtotalBruto * ((item.descuento ?? 0) / 100)
+    } else if (item.tipo_descuento === 'monto') {
+      desc_aplicado = item.descuento ?? 0
+    }
+
+    return {
+      producto_id:      item.producto_id,
+      cantidad:         item.cantidad,
+      precio:           item.precio,
+      precio_compra:    item.precio_compra,
+      // subtotal sin descuento, el bruto por cantidad
+      subtotal:         subtotalBruto,
+      tipo_descuento:   item.tipo_descuento ?? null,
+      descuento:        item.descuento ?? 0,
+      descuento_aplicado: desc_aplicado,
+    }
+  })
 
   const ventaData = {
     usuario_id,
-    total: total.value,
+    // total es el subtotal bruto sin descuentos (suma de precio * cantidad de cada item)
+    total: carrito.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0),
+    // total_final es lo que realmente se cobra despues de descuentos por producto
+    total_final,
     pago,
     cambio,
     metodo_pago,
     detalles,
-    tipo_descuento : tipo_descuento,
-    descuento : descuento,
-    descuento_aplicado : descuento_aplicado,
-    total_final : total_final
   }
 
   try {
@@ -254,14 +327,12 @@ async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuent
       title: 'Guardando venta...',
       text: 'Por favor espera',
       allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading()
-      }
+      didOpen: () => { Swal.showLoading() }
     })
 
-    //registramos la venta realizada de los productos
+    // registramos la venta realizada
     const resultado = await registrarVenta(ventaData)
-    
+
     carrito.value = []
     showModalPago.value = false
     await loadProducts()
@@ -269,12 +340,12 @@ async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuent
 
     Swal.fire({
       icon: 'success',
-      title: '¡Venta realizada!',
-      text: resultado.message || 'La venta se registró correctamente.',
+      title: 'Venta realizada!',
+      text: resultado.message || 'La venta se registro correctamente.',
       confirmButtonText: 'Cerrar',
       confirmButtonColor: '#22c55e'
     })
-    
+
   } catch (e: any) {
     Swal.close()
     Swal.fire({
@@ -296,7 +367,7 @@ async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuent
       </div>
     </template>
   </TopBanner>
-  
+
   <div class="ventas-container flex flex-col md:flex-row gap-6">
     <div class="w-full md:w-2/3">
       <div class="relative mb-4">
@@ -314,7 +385,7 @@ async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuent
           autocomplete="off"
         />
       </div>
-      
+
       <!-- Grid de productos-->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center items-center">
         <div
@@ -330,20 +401,21 @@ async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuent
           >
             {{ producto.nombre }}
           </span>
-          <span class="text-xs text-gray-400">{{ producto.codigo ?? 'Sin código' }}</span>
+          <span class="text-xs text-gray-400">{{ producto.codigo ?? 'Sin codigo' }}</span>
           <span class="font-bold mt-1">${{ Number(producto.precio_venta).toFixed(2) }}</span>
           <button
             class="btn justify-center"
             @click="agregarAlCarrito(producto)"
           >
-          <i class="far fa-plus"></i>
+            <i class="far fa-plus"></i>
             Agregar
           </button>
         </div>
       </div>
+
       <!-- paginacion -->
       <div class="flex justify-center items-center gap-3 mt-6 select-none">
-        <!-- Botón Anterior -->
+        <!-- Boton Anterior -->
         <button
           @click="page--; loadProducts()"
           :disabled="page <= 1"
@@ -377,28 +449,37 @@ async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuent
         </button>
       </div>
     </div>
-    
+
     <!-- Carrito y Resumen -->
     <div class="w-full md:w-1/3">
       <Cart
-        :items="carrito"
+        :items="carritoConDescuento"
         :img="defaultImg"
         @sumar="sumarCantidad"
         @restar="restarCantidad"
         @eliminar="eliminarDelCarrito"
+        @descuento="abrirDescuentoProducto"
       />
       <ResumenVenta
         :total="total"
         @pagar="abrirModalPago"
       />
     </div>
-    
+
     <!-- Modal de Pago -->
     <ModalPago
       v-if="showModalPago"
       :total="total"
       @close="showModalPago = false"
       @confirmar="registrarVentaLocal"
+    />
+
+    <!-- Modal descuento producto individual -->
+    <ModalDescuentoProducto
+      v-if="showModalDescuentoProducto && productoDescuento"
+      :item="productoDescuento"
+      @close="showModalDescuentoProducto = false"
+      @confirmar="aplicarDescuentoProducto"
     />
   </div>
 </template>

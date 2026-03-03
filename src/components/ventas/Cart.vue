@@ -26,6 +26,10 @@
         <div class="text-xl text-gray-400 dark:text-gray-500">
           ${{ item.precio }} x {{ item.cantidad }}
         </div>
+        <div v-if="item.descuento" class="text-xs text-green-600">
+          Desc: {{ item.tipo_descuento === 'porcentaje' ? item.descuento + '%' : '$' + item.descuento }}
+          (-${{ item.descuento_aplicado?.toFixed(2) }})
+        </div>
       </div>
 
       <div class="flex items-center gap-2">
@@ -61,6 +65,14 @@
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
 
+        <button class="w-9 h-9 flex items-center justify-center rounded-full 
+                 bg-red-100 dark:bg-blue-900 text-blue-600 dark:text-red-300
+                 hover:bg-blue-200 dark:hover:bg-red-800 transition"
+          @click="$emit('descuento', item.producto_id)"
+        >
+          <i class="fa-solid fa-tag text-sm"></i>
+        </button>
+
       </div>
     </div>
   </div>
@@ -68,5 +80,5 @@
 
 <script setup>
 defineProps(['items', 'img'])
-defineEmits(['sumar', 'restar', 'eliminar'])
+defineEmits(['sumar', 'restar', 'eliminar', 'descuento'])
 </script>
