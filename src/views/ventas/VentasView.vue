@@ -8,7 +8,9 @@ import ModalPago from '@/components/ventas/ModalPago.vue'
 import ModalDescuentoProducto from '@/components/ventas/ModalDescuentoProducto.vue'
 import { buscarPorCodigoBarras, registrarVenta, fetchProducts } from '@/api/ventas'
 import { useAuthStore } from '@/stores/authStore'
+import { crearPlanPago } from '@/api/planes_pago'
 import Swal from 'sweetalert2'
+import ModalAbono from '@/components/creditos/ModalAbonoCredito.vue'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
@@ -54,6 +56,7 @@ const carritoConDescuento = computed(() =>
 const showModalPago = ref(false)
 const defaultImg = '/images/home/vuejs.png'
 const loading = ref(false)
+const showModalAbono = ref(false)
 
 //NUEVAS VARIABLES PARA SCANNER
 let codigoBuffer = ''
@@ -278,15 +281,11 @@ function aplicarDescuentoProducto({ descuento_aplicado, tipo_descuento, descuent
   productoDescuento.value = null
 }
 
-async function registrarVentaLocal({ pago, metodo_pago, total_final }: any) {
+async function registrarVentaLocal({ pago, metodo_pago, total_final, es_credito, credito }: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const usuario_id = user.id
+  const cambio = es_credito ? 0 : pago - total_final
 
-  // cambio calculado contra el total ya con descuentos aplicados por producto
-  const cambio = pago - total_final
-
-  // Recalculamos descuento_aplicado por item en el momento del registro
-  // para que refleje la cantidad actual y no un valor desactualizado
   const detalles = carrito.value.map(item => {
     const subtotalBruto = item.precio * item.cantidad
     let desc_aplicado = 0
@@ -298,23 +297,20 @@ async function registrarVentaLocal({ pago, metodo_pago, total_final }: any) {
     }
 
     return {
-      producto_id:      item.producto_id,
-      cantidad:         item.cantidad,
-      precio:           item.precio,
-      precio_compra:    item.precio_compra,
-      // subtotal sin descuento, el bruto por cantidad
-      subtotal:         subtotalBruto,
-      tipo_descuento:   item.tipo_descuento ?? null,
-      descuento:        item.descuento ?? 0,
+      producto_id:        item.producto_id,
+      cantidad:           item.cantidad,
+      precio:             item.precio,
+      precio_compra:      item.precio_compra,
+      subtotal:           subtotalBruto,
+      tipo_descuento:     item.tipo_descuento ?? null,
+      descuento:          item.descuento ?? 0,
       descuento_aplicado: desc_aplicado,
     }
   })
 
   const ventaData = {
     usuario_id,
-    // total es el subtotal bruto sin descuentos (suma de precio * cantidad de cada item)
     total: carrito.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0),
-    // total_final es lo que realmente se cobra despues de descuentos por producto
     total_final,
     pago,
     cambio,
@@ -332,6 +328,17 @@ async function registrarVentaLocal({ pago, metodo_pago, total_final }: any) {
 
     // registramos la venta realizada
     const resultado = await registrarVenta(ventaData)
+    console.log('resultado venta:', resultado) 
+
+    // si es credito registramos el plan de pago con el id de la venta recien creada
+    if (es_credito && credito) {
+      await crearPlanPago({
+        ...credito,
+        venta_id: resultado.data.venta.id,
+        usuario_id,
+        total_venta: total_final,
+      })
+    }
 
     carrito.value = []
     showModalPago.value = false
@@ -340,7 +347,7 @@ async function registrarVentaLocal({ pago, metodo_pago, total_final }: any) {
 
     Swal.fire({
       icon: 'success',
-      title: 'Venta realizada!',
+      title: es_credito ? 'Venta a credito registrada!' : 'Venta realizada!',
       text: resultado.message || 'La venta se registro correctamente.',
       confirmButtonText: 'Cerrar',
       confirmButtonColor: '#22c55e'
@@ -370,21 +377,32 @@ async function registrarVentaLocal({ pago, metodo_pago, total_final }: any) {
 
   <div class="ventas-container flex flex-col md:flex-row gap-6">
     <div class="w-full md:w-2/3">
-      <div class="relative mb-4">
-        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-          <svg class="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2"></line>
-          </svg>
-        </span>
-        <input
-          v-model="search"
-          class="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-400 transition"
-          placeholder="Buscar producto..."
-          type="text"
-          autocomplete="off"
-        />
+      <div class="relative mb-4 flex gap-3">
+        <div class="relative flex-1">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <svg class="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2"></line>
+            </svg>
+          </span>
+          <input
+            v-model="search"
+            class="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-400 transition"
+            placeholder="Buscar producto..."
+            type="text"
+            autocomplete="off"
+          />
+        </div>
+        <!-- boton para registrar abono desde ventas -->
+        <button
+          class="btn flex items-center gap-2 whitespace-nowrap"
+          @click="showModalAbono = true"
+        >
+          <i class="fa-solid fa-hand-holding-dollar"></i>
+          Abonar pago
+        </button>
       </div>
+      
 
       <!-- Grid de productos-->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center items-center">
@@ -472,6 +490,12 @@ async function registrarVentaLocal({ pago, metodo_pago, total_final }: any) {
       :total="total"
       @close="showModalPago = false"
       @confirmar="registrarVentaLocal"
+    />
+
+    <ModalAbono
+      v-if="showModalAbono"
+      @close="showModalAbono = false"
+      @abonado="loadProducts"
     />
 
     <!-- Modal descuento producto individual -->

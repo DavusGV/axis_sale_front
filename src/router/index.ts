@@ -108,6 +108,8 @@ import ReporteVentasView from "@/views/reportes/ReporteVentasView.vue";
 import EstablecimientoView from '@/views/establecimiento/EstablecimientoView.vue';
 import EditarUsuarioView from '@/views/usuarios/[id]/editarView.vue'
 import IngresosView from "@/views/finanzas/IngresosView.vue";
+import ClientesView from '@/views/clientes/ClientesView.vue';
+import CreditoView from '@/views/credito/CreditoView.vue';
 
 
 
@@ -800,6 +802,18 @@ const router = createRouter({
       path: '/Finanzas/ingresos',
       name: 'ingresos',
       component:  IngresosView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/clientes',
+      name: 'Cliente',
+      component:  ClientesView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/credito',
+      name: 'Plan de Pago',
+      component:  CreditoView,
       meta: { requiresAuth: true } 
     },
 
