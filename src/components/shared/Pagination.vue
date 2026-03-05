@@ -18,9 +18,10 @@ const props = defineProps<{
 
     <!-- Texto de rangos -->
     <p>
-      Showing {{ props.startIndex + 1 }} to {{ props.endIndex + 1 }} of
-      {{ props.totalData }} entries
-    </p>
+    Mostrando registros del {{ props.startIndex + 1 }} al {{ props.endIndex + 1 }}
+    de un total de {{ props.totalData }}
+  </p>
+
 
     <!-- Paginación -->
     <ul class="flex gap-2 md:gap-3 flex-wrap md:font-semibold items-center">

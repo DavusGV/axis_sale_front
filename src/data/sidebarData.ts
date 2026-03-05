@@ -63,8 +63,8 @@ export const sidebarData = [
                 name: "Finanzas",
                 icon: IconCoins,
                 submenus: [
-                    { title: "Tipo de Gasto", url: "/dashboards/analytics" },
-                    { title: "Gastos", url: "/dashboards/analytics" },
+                    { title: "Tipo de Gasto", url: "/finanzas/tipogastos" },
+                    { title: "Gastos", url: "/finanzas/gastos" },
                     { title: "Ingresos", url: "/finanzas/ingresos" },
                     { title: "Balance", url: "/dashboards/stock" },
                 ],

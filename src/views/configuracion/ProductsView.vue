@@ -30,7 +30,7 @@ const columns = [
   { key: 'precio_compra', label: 'Precio Compra' },
   { key: 'precio_venta', label: 'Precio Venta' },
   { key: 'stock', label: 'Stock' },
-  { key: 'categoria_id', label: 'Categoría' },
+  { key: 'categoria', label: 'Categoría' },
 ]
 
 const params = ref({
