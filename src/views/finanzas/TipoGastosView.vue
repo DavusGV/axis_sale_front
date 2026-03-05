@@ -284,7 +284,7 @@ onMounted(() => {
             <div class="col-span-12 lg:col-span-12">
                 <agregarTipoGasto
                   :editData="tipoGastoEditando"
-                  @edit="handleUpdate" 
+                  @editar="handleUpdate"
                   @guardar="guardarTipoGasto"
                   @search="handleSearch"
                   />

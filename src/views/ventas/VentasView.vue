@@ -355,10 +355,17 @@ async function registrarVentaLocal({ pago, metodo_pago, total_final, es_credito,
 
   } catch (e: any) {
     Swal.close()
+
+    // extraer mensaje de error de validacion
+    const errores = e?.response?.data?.errors
+    const mensaje = errores
+      ? Object.values(errores).flat().join('\n')
+      : e?.response?.data?.message || e?.message || 'No se pudo registrar la venta.'
+
     Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: e?.message || 'No se pudo registrar la venta.'
+      text: mensaje
     })
   }
 }

@@ -8,20 +8,31 @@ export interface payload {
   state: string
 }
 
-export interface filter { 
+export interface filter {
   search?:string
-  page?: number 
-  per_page?: number 
+  page?: number
+  per_page?: number
   status?:  string
 }
 
-export interface filtergasto { 
+export interface filtergasto {
   search?:string
-  page?: number 
-  per_page?: number 
+  page?: number
+  per_page?: number
   status?:  string,
   month?: number,
-  year?: numer
+  year?: number
+}
+
+export interface gastoPayload {
+  id?: number
+  tipo_gasto_id: number | string
+  metodo_pago_id: number | string
+  concepto: string
+  descripcion?: string
+  monto: number | string
+  fecha: string
+  state: number | boolean
 }
 
 // Función para registrar tipo de gastos
@@ -40,7 +51,7 @@ export async function fetchTgastos(params: filter = {}) {
     }
   })
 
-  return res.data.data 
+  return res.data.data
 }
 
 export async function deleteType(id: number) {
@@ -63,18 +74,37 @@ export async function fetchGastos(params: filtergasto = {}) {
       year: params.year ?? null
     }
   })
+  return res.data.data
+}
 
-  return res.data.data 
+export async function registrarGasto(data: gastoPayload) {
+  const res = await axiosInstance.post('/finance/gasto', data)
+  return res.data
+}
+
+export async function editarGasto(data: gastoPayload) {
+  const res = await axiosInstance.put('/finance/gasto', data)
+  return res.data
+}
+
+export async function deleteGasto(id: number) {
+  const res = await axiosInstance.delete(`/finance/gasto/${id}`)
+  return res.data
+}
+
+export async function fetchResumenGastos(params: { month?: number; year?: number } = {}) {
+  const res = await axiosInstance.get('/finance/gasto/resumen', { params })
+  return res.data.data
 }
 
 export async function getType() {
   const res = await axiosInstance.get('/finance/getType')
 
-  return res.data 
+  return res.data
 }
 
 export async function getMethodPay() {
   const res = await axiosInstance.get('/finance/getmethodpay')
 
-  return res.data 
+  return res.data
 }
