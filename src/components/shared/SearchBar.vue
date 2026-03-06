@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { IconSearch } from '@tabler/icons-vue'
 const props = defineProps<{
-  search: (event: any) => void
+  search?: (event: any) => void
 }>()
+
 </script>
 
 <template>

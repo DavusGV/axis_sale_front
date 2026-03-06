@@ -45,6 +45,15 @@ const handleDelete = (id: number) => {
   }
 }
 
+// Define los eventos emitidos por el componente
+const emit = defineEmits<{
+  (e: 'view-history', boxId: number): void
+}>()
+
+const handleDetails = (boxId: number) => {
+  emit('view-history', boxId)
+}
+
 onMounted(async () => {
   try {
     isLoading.value = true
@@ -60,7 +69,6 @@ function openAperturaModal(cajaId: number) {
   cajaSeleccionadaId.value = cajaId
   showModal.value = true
 }
-
 function closeCajaModal(cajaId: number) {
   cajaSeleccionadaId.value = cajaId
   showModalClose.value = true
@@ -83,7 +91,6 @@ watch(
     await onCajaSaved()
   }
 )
-
 </script>
 
 <template>
@@ -92,10 +99,6 @@ watch(
       <p class="font-medium">Lista de cajas</p>
       <div class="flex items-center gap-4 lg:gap-8 xl:gap-10">
         <SearchBar :search="search" />
-        <div class="flex items-center gap-2">
-          <p class="whitespace-nowrap">Sort By :</p>
-          <CommonDropdown :options="[{ name: 'id' }, { name: 'nombre' }, { name: 'status' }]" />
-        </div>
       </div>
     </div>
     <div class="overflow-x-auto p-4 lg:p-6 rounded-2xl bg-primary/5 dark:bg-bg3 mb-6">
@@ -207,6 +210,7 @@ watch(
                       index == paginatedData.length - 1 || index == paginatedData.length - 2
                     "
                     :on-delete="() => handleDelete(id)"
+                    :onDetails="() => handleDetails(id)"
                   />
                 </div>
               </td>

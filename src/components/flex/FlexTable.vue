@@ -15,10 +15,13 @@ const props = defineProps<{
   prevPage: () => void
   columns: { key: string, label: string }[]
   loading: boolean
-  handleEdit: (item: any) => void
-  handleDelete: (id: number) => void
-  search: (event: any) => void
+
+  //ahora opcionales
+  handleEdit?: (item: any) => void
+  handleDelete?: (id: number) => void
+  search?: (event: any) => void
 }>()
+
 </script>
 
 <template>
@@ -83,13 +86,30 @@ const props = defineProps<{
                 {{ item[col.key] ?? '—' }}
               </td>
 
-              <td class="px-4 py-5 text-center">
+              <td
+                v-if="props.handleEdit || props.handleDelete"
+                class="px-4 py-5 text-center"
+              >
                 <TableActions
+                  v-if="props.handleEdit && props.handleDelete"
                   :fromBottom="false"
-                  :on-edit="() => props.handleEdit(item)"
-                  :on-delete="() => props.handleDelete(item.id)"
+                  :on-edit="() => props.handleEdit!(item)"
+                  :on-delete="() => props.handleDelete!(item.id)"
+                />
+                <TableActions
+                  v-else-if="props.handleEdit"
+                  :fromBottom="false"
+                  :on-edit="() => props.handleEdit!(item)"
+                  :on-delete="() => {}"
+                />
+                <TableActions
+                  v-else
+                  :fromBottom="false"
+                  :on-edit="() => {}"
+                  :on-delete="() => props.handleDelete!(item.id)"
                 />
               </td>
+
             </tr>
           </tbody>
         </table>

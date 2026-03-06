@@ -6,6 +6,7 @@ const props = defineProps<{
   fromBottom: boolean
   onDelete: () => void
   onEdit?: () => void 
+  onDetails?: () => void
 }>()
 const openDropdown = ref(false)
 const target = ref(null)
@@ -32,6 +33,14 @@ const toggleOpen = () => {
           class="py-2 w-full text-left hover:bg-primary/10 rounded-md hover:text-primary duration-300 block px-3"
         >
           Editar
+        </button>
+      </li>
+      <li v-if="props.onDetails">
+        <button
+          @click="props.onDetails()"
+          class="py-2 w-full text-left hover:bg-primary/10 rounded-md hover:text-primary duration-300 block px-3"
+        >
+          Detalles
         </button>
       </li>
       <li>

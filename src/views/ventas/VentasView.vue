@@ -276,6 +276,7 @@ async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuent
     })
     
   } catch (e: any) {
+    
     Swal.close()
     Swal.fire({
       icon: 'error',
@@ -334,10 +335,11 @@ async function registrarVentaLocal({ pago, metodo_pago, tipo_descuento, descuent
           <span class="font-bold mt-1">${{ Number(producto.precio_venta).toFixed(2) }}</span>
           <button
             class="btn justify-center"
+            :disabled="producto.stock <= 0"
             @click="agregarAlCarrito(producto)"
           >
           <i class="far fa-plus"></i>
-            Agregar
+             {{ producto.stock > 0 ? 'Agregar' : 'Sin stock' }}
           </button>
         </div>
       </div>
