@@ -154,7 +154,7 @@ onMounted(() => {
           class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
           @click="$emit('close')"
         >
-          <IconX size="18"/>
+          <IconX :size="18"/>
         </button>
       </div>
 
@@ -278,7 +278,7 @@ onMounted(() => {
           :disabled="loading"
           @click="guardar"
         >
-          <IconDeviceFloppy size="16"/>
+          <IconDeviceFloppy :size="16"/>
           {{ loading ? 'Guardando...' : 'Guardar' }}
         </button>
       </div>

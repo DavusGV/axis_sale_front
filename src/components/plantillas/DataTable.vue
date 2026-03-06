@@ -1,23 +1,36 @@
 <script setup lang="ts">
 import Pagination from '../shared/Pagination.vue'
 import TableActions from '@/components/shared/TableActions.vue'
-import { defineProps, defineEmits } from 'vue'
 
-const props = defineProps({
-  items: Array,
-  columns: Array,
-  currentPage: Number,
-  totalPages: Number,
-  total: Number,
-  startIndex: Number,
-  endIndex: Number,
-  paginate: Function,
-  nextPage: Function,
-  prevPage: Function
-})
+interface Column {
+  key: string
+  label: string
+}
 
+interface Item {
+  id: number | string
+  state?: number | string
+  [key: string]: any
+}
 
-const emit = defineEmits(['changePage', 'delete', 'edit'])
+const props = defineProps<{
+  items: Item[]
+  columns: Column[]
+  currentPage: number
+  totalPages: number
+  total: number
+  startIndex: number
+  endIndex: number
+  paginate: (page: number) => void
+  nextPage: () => void
+  prevPage: () => void
+}>()
+
+const emit = defineEmits<{
+  (e: 'changePage', page: number): void
+  (e: 'delete', id: number): void
+  (e: 'edit', item: Item): void
+}>()
 
 const changePage = (page: number) => {
   if (page >= 1 && page <= props.totalPages) {
@@ -29,14 +42,13 @@ const emitDelete = (id: number) => {
   emit('delete', id)
 }
 
-const emitEdit = (item: any) => {
+const emitEdit = (item: Item) => {
   emit('edit', item)
 }
 
 function getValue(obj: any, path: string) {
   return path.split('.').reduce((o, i) => (o ? o[i] : null), obj)
 }
-
 </script>
 
 <template>
@@ -61,14 +73,14 @@ function getValue(obj: any, path: string) {
     class="even:bg-primary/5 dark:even:bg-bg3"
   >
 
-    <!-- 🔥 Columnas dinámicas -->
+    <!-- Columnas dinámicas -->
     <td
       v-for="col in columns"
       :key="col.key"
       class="px-4 py-2 text-xs"
     >
       
-      <!-- 👇 Render especial para estado -->
+      <!-- Render especial para estado -->
       <template v-if="col.key === 'state'">
       <span
   :class="item.state === 1 || item.state === 'activo'
@@ -80,7 +92,7 @@ function getValue(obj: any, path: string) {
 </span>
       </template>
 
-      <!-- 👇 Render normal -->
+      <!-- Render normal -->
       <template v-else>
         {{ getValue(item, col.key) ?? '--' }}
       </template>
@@ -93,7 +105,7 @@ function getValue(obj: any, path: string) {
         <TableActions
           :from-bottom="index >= items.length - 2"
           :on-edit="() => emitEdit(item)"
-          :on-delete="() => emitDelete(item.id)"
+          :on-delete="() => emitDelete(Number(item.id))"
         />
       </div>
     </td>
@@ -101,17 +113,19 @@ function getValue(obj: any, path: string) {
   </tr>
 </tbody>
       </table>
-          <Pagination
-      v-if="props.items.length"
-      :current-page="props.currentPage"
-      :start-index="props.startIndex"
-      :end-index="props.endIndex"
-      :total-data="props.total"
-      :total-pages="props.totalPages"
-      :paginate="props.paginate"
-      :next-page="props.nextPage"
-      :prev-page="props.prevPage"
-    />
+
+      <Pagination
+        v-if="items.length"
+        :current-page="currentPage"
+        :start-index="startIndex"
+        :end-index="endIndex"
+        :total-data="total"
+        :total-pages="totalPages"
+        :paginate="paginate"
+        :next-page="nextPage"
+        :prev-page="prevPage"
+      />
+
     </div>
   </div>
 </template>

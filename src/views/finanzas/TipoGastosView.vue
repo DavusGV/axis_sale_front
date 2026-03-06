@@ -113,7 +113,7 @@ const guardarTipoGasto = async (data: any) => {
 
     console.log('Tipo de gasto guardado correctamente:', result)
 
-  } catch (error) {
+  } catch (error: any) {
      load.value = false;
 
   console.error('Error al guardar:', error)

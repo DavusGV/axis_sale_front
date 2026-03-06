@@ -134,12 +134,12 @@ watch(
         <!-- Botones -->
         <div class="flex gap-3">
           <button type="button" title="Buscar" class="w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition" @click="search">
-            <IconSearch size="20" />
+            <IconSearch :size="20" />
           </button>
 
           <!-- Guardar -->
           <button type="button" title="Guardar" class="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl hover:bg-green-500 transition" @click="submitForm">
-            <IconDeviceFloppy size="20" />
+            <IconDeviceFloppy :size="20" />
           </button>
 
           <!-- Cancelar -->
@@ -149,7 +149,7 @@ watch(
             class="w-10 h-10 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-xl hover:text-green-400 transition"
             @click="resetForm"
           >
-            <IconX size="20" />
+            <IconX :size="20" />
           </button>
         </div>
       </form>
