@@ -66,7 +66,7 @@ export const sidebarData = [
                     { title: "Tipo de Gasto", url: "/finanzas/tipogastos" },
                     { title: "Gastos", url: "/finanzas/gastos" },
                     { title: "Ingresos", url: "/finanzas/ingresos" },
-                    { title: "Balance", url: "/dashboards/stock" },
+                    { title: "Balance", url: "/finanzas/balance" },
                 ],
             },
             {
@@ -75,6 +75,7 @@ export const sidebarData = [
                 icon: IconReportAnalytics,
                 submenus: [
                     { title: "Ventas", url: "/reportes/ventas" },
+                    { title: "Creditos", url: "/reportes/creditos" },
                 ],
             },
          /*    {

@@ -224,7 +224,7 @@ function formatFecha(fecha: string) {
               ${{ Number(plan.total_a_pagar).toFixed(2) }}
             </td>
             <td class="px-4 py-3 text-right text-green-600 font-medium">
-              ${{ Number(plan.monto_cuota).toFixed(2) }}
+              ${{ Math.floor(Number(plan.total_financiado) / Number(plan.num_plazos)).toFixed(2) }}
             </td>
             <td class="px-4 py-3 text-right font-bold"
               :class="Number(plan.saldo_pendiente) > 0 ? 'text-orange-500' : 'text-green-600'"

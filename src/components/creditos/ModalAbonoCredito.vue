@@ -128,7 +128,7 @@
                     </span>
                   </p>
                   <p class="text-xs text-gray-400 mt-1">
-                    {{ plan.num_plazos }} pagos {{ plan.tipo_plazo }} · Cuota ${{ Number(plan.monto_cuota).toFixed(2) }}
+                    {{ plan.num_plazos }} pagos {{ plan.tipo_plazo }} · Cuota ${{ Math.floor(Number(plan.total_financiado) / Number(plan.num_plazos)).toFixed(2) }}
                   </p>
                 </div>
                 <div class="text-right">
@@ -168,7 +168,7 @@
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500 dark:text-gray-400">Cuota sugerida:</span>
-              <span class="font-medium text-green-600">${{ Number(planSeleccionado.monto_cuota).toFixed(2) }}</span>
+              <span class="font-medium text-green-600">${{ Math.floor(Number(planSeleccionado.total_financiado) / Number(planSeleccionado.num_plazos)).toFixed(2) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500 dark:text-gray-400">Proximo pago:</span>
@@ -214,14 +214,15 @@
                 <i class="fa-solid fa-wallet text-gray-400"></i>
               </span>
               <select
-                v-model="metodoPago"
+                :value="metodoPagoId"
+                @change="onMetodoPagoChange(Number(($event.target as HTMLSelectElement).value))"
                 class="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
-                       bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
-                       focus:ring-1 focus:ring-green-400 transition"
+                      bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                      focus:ring-1 focus:ring-green-400 transition"
               >
-                <option value="efectivo">Efectivo</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="transferencia">Transferencia</option>
+                <option v-for="m in metodosPago" :key="m.id" :value="m.id">
+                  {{ m.nombre }}
+                </option>
               </select>
             </div>
           </div>
@@ -277,6 +278,7 @@ import { ref, computed } from 'vue'
 import Swal from 'sweetalert2'
 import { buscarClientes } from '@/api/clientes'
 import { fetchPlanesPorCliente, registrarAbono } from '@/api/planes_pago'
+import { getMetodosPago } from '@/api/ventas'
 
 interface Cliente {
   id: number
@@ -317,7 +319,9 @@ const planSeleccionado = ref<PlanPago | null>(null)
 
 // paso 3
 const montoAbono = ref<number | undefined>(undefined)
-const metodoPago = ref('efectivo')
+const metodoPago = ref<string>('')
+const metodosPago   = ref<{ id: number; nombre: string }[]>([])
+const metodoPagoId  = ref<number | null>(null)
 const notas = ref('')
 const loadingAbono = ref(false)
 
@@ -328,6 +332,14 @@ const montoValido = computed(() => {
   if (montoAbono.value > Number(planSeleccionado.value.saldo_pendiente)) return false
   return true
 })
+
+function onMetodoPagoChange(id: number) {
+  const metodo = metodosPago.value.find(m => m.id === id)
+  if (metodo) {
+    metodoPago.value   = metodo.nombre
+    metodoPagoId.value = metodo.id
+  }
+}
 
 function onBuscarCliente() {
   clearTimeout(buscarTimeout)
@@ -359,10 +371,25 @@ async function seleccionarCliente(cliente: Cliente) {
   }
 }
 
-function seleccionarPlan(plan: PlanPago) {
+async function seleccionarPlan(plan: PlanPago) {
   planSeleccionado.value = plan
-  montoAbono.value = Number(plan.monto_cuota)
+  const cuota = Math.floor(Number(plan.total_financiado) / Number(plan.num_plazos))
+  montoAbono.value = cuota
   pasoActual.value = 3
+
+  // cargar metodos de pago si no se han cargado aun
+  if (!metodosPago.value.length) {
+    try {
+      const res = await getMetodosPago()
+      metodosPago.value = res.data ?? []
+      if (metodosPago.value.length) {
+        metodoPago.value   = metodosPago.value[0].nombre
+        metodoPagoId.value = metodosPago.value[0].id
+      }
+    } catch {
+      metodosPago.value = []
+    }
+  }
 }
 
 function volverPaso1() {
@@ -401,10 +428,11 @@ async function confirmarAbono() {
   loadingAbono.value = true
   try {
     const res = await registrarAbono(planSeleccionado.value.id, {
-      monto_pagado: montoAbono.value,
-      metodo_pago:  metodoPago.value,
-      notas:        notas.value || null,
-      usuario_id:   user.id,
+      monto_pagado:   montoAbono.value,
+      metodo_pago:    'Abono a credito',
+      metodo_pago_id: null,
+      notas:          notas.value || null,
+      usuario_id:     user.id,
     })
 
     // extraemos estado del response (compatible con ambas estructuras)

@@ -31,15 +31,19 @@
                 <i class="fa-solid fa-wallet text-gray-400"></i>
               </span>
               <select
-                v-model="metodo_pago"
+                :value="metodo_pago_id"
+                @change="onMetodoPagoChange(Number(($event.target as HTMLSelectElement).value))"
                 class="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
-                       bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
-                       focus:ring-1 focus:ring-green-400 transition"
+                      bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                      focus:ring-1 focus:ring-green-400 transition"
               >
-                <option value="efectivo">Efectivo</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="credito">Credito</option>
+                <option
+                  v-for="m in metodosPago"
+                  :key="m.id"
+                  :value="m.id"
+                >
+                  {{ m.nombre }}
+                </option>
               </select>
             </div>
           </div>
@@ -110,12 +114,16 @@
               <span class="font-bold text-blue-600">${{ totalFinanciado.toFixed(2) }}</span>
             </div>
             <div v-if="numPlazos > 0" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">Cuota {{ tipoPlazo }}:</span>
+              <span class="text-gray-500 dark:text-gray-400">Cuota {{ tipoPlazo }} (1-{{ numPlazos - 1 }}):</span>
               <span class="font-bold text-green-600">${{ montoCuota.toFixed(2) }}</span>
+            </div>
+            <div v-if="numPlazos > 1" class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Ultimo plazo (#{{ numPlazos }}):</span>
+              <span class="font-bold text-orange-500">${{ montoUltimaCuota.toFixed(2) }}</span>
             </div>
             <div v-if="numPlazos > 0" class="flex justify-between">
               <span class="text-gray-500 dark:text-gray-400">Total a pagar:</span>
-              <span class="font-bold">${{ (montoCuota * numPlazos).toFixed(2) }}</span>
+              <span class="font-bold">${{ totalFinanciado.toFixed(2) }}</span>
             </div>
           </div>
 
@@ -341,13 +349,16 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import Swal from 'sweetalert2'
 import { buscarClientes, crearCliente } from '@/api/clientes'
 import { crearPlanPago } from '@/api/planes_pago'
+import { getMetodosPago } from '@/api/ventas'
 
 const props = defineProps(['total'])
 const emits = defineEmits(['close', 'confirmar'])
 
 const loading = ref(false)
 const pago = ref()
-const metodo_pago = ref('efectivo')
+const metodo_pago    = ref<string>('')
+const metodo_pago_id = ref<number | null>(null)
+const metodosPago    = ref<{ id: number; nombre: string }[]>([])
 const inputPago = ref<HTMLInputElement | null>(null)
 
 // datos credito
@@ -379,7 +390,9 @@ const nuevoCliente        = ref({
 
 let buscarTimeout: ReturnType<typeof setTimeout> | undefined = undefined
 
-const esCredito = computed(() => metodo_pago.value === 'credito')
+const esCredito = computed(() =>
+  metodo_pago.value.toLowerCase().trim() === 'credito'
+)
 
 // calculo del interes
 const interesAplicado = computed(() => {
@@ -399,13 +412,39 @@ const totalFinanciado = computed(() => {
 // cuota redondeada hacia arriba para evitar centavos
 const montoCuota = computed(() => {
   if (!numPlazos.value || numPlazos.value <= 0) return 0
-  return Math.ceil((totalFinanciado.value / numPlazos.value) * 100) / 100
+  return Math.floor(totalFinanciado.value / numPlazos.value)
 })
 
-// enfocamos el input al abrir
-onMounted(() => {
-  nextTick(() => inputPago.value?.focus())
+// pago el ultimo plazo
+const montoUltimaCuota = computed(() => {
+  if (!numPlazos.value || numPlazos.value <= 0) return 0
+  return totalFinanciado.value - (montoCuota.value * (numPlazos.value - 1))
 })
+
+// cargar metodos al montar
+onMounted(async () => {
+  nextTick(() => inputPago.value?.focus())
+  try {
+    const res = await getMetodosPago()
+    metodosPago.value = res.data ?? []
+    // seleccionar el primero por defecto si existe
+    if (metodosPago.value.length) {
+      metodo_pago.value    = metodosPago.value[0].nombre
+      metodo_pago_id.value = metodosPago.value[0].id
+    }
+  } catch {
+    metodosPago.value = []
+  }
+})
+
+// funcion para manejar el cambio de metodo
+function onMetodoPagoChange(id: number) {
+  const metodo = metodosPago.value.find(m => m.id === id)
+  if (metodo) {
+    metodo_pago_id.value = metodo.id
+    metodo_pago.value    = metodo.nombre
+  }
+}
 
 // limpiamos interes cuando se quita el tipo
 watch(interesTipo, (val) => {
@@ -500,6 +539,7 @@ async function confirmarVenta() {
     emits('confirmar', {
       pago: pago.value,
       metodo_pago: metodo_pago.value,
+      metodo_pago_id: metodo_pago_id.value,
       total_final: props.total,
       es_credito: false
     })
@@ -525,6 +565,7 @@ async function confirmarVenta() {
   emits('confirmar', {
     pago: anticipo.value || 0,
     metodo_pago: metodo_pago.value,
+    metodo_pago_id: metodo_pago_id.value, 
     total_final: props.total,
     es_credito: true,
     credito: {

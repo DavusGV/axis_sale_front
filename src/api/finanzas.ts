@@ -108,3 +108,14 @@ export async function getMethodPay() {
 
   return res.data
 }
+
+// Balance
+export async function fetchBalanceMensual(params: { month: number; year: number }) {
+  const res = await axiosInstance.get('/finance/balance/mensual', { params })
+  return res.data.data
+}
+
+export async function fetchHistorialBalance(params: { meses: number }) {
+  const res = await axiosInstance.get('/finance/balance/historial', { params })
+  return res.data.data
+}

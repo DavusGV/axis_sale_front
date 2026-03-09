@@ -1,4 +1,5 @@
 import axiosInstance from '@/utils/axios'
+import { getMetodosPago } from '@/api/ventas'
 
 export const crearPlanPago = async (data: object) => {
   const res = await axiosInstance.post('planes-pago', data)
@@ -31,3 +32,5 @@ export const fetchPlanesPorCliente = async (clienteId: number) => {
   })
   return res.data
 }
+
+export { getMetodosPago }

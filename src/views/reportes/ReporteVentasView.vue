@@ -25,7 +25,18 @@ function getMonthRange() {
 const filtro = ref(getMonthRange())
 const loading = ref(false)
 const error = ref('')
-const data = ref<{ productos: any[]; totales: any }>({ productos: [], totales: { inversion: 0, vendido: 0, ganancia: 0 } })
+const data = ref<{ productos: any[]; totales: any }>({
+  productos: [],
+  totales: {
+    inversion: 0,
+    vendido: 0,
+    cobrado_real: 0,
+    ganancia_real: 0,
+    pendiente_credito: 0,
+    cobrado_contado: 0,
+    cobrado_credito: 0,
+  }
+})
 
 async function cargarReporte() {
   loading.value = true

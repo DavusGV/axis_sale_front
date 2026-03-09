@@ -66,8 +66,14 @@
                 <span class="font-bold">${{ Number(planLocal.total_financiado).toFixed(2) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-500 dark:text-gray-400">Cuota:</span>
-                <span class="font-bold text-green-600">${{ Number(planLocal.monto_cuota).toFixed(2) }}</span>
+                <span class="text-gray-500 dark:text-gray-400">
+                  Cuota{{ planLocal.num_plazos > 1 ? ' (1-' + (planLocal.num_plazos - 1) + ')' : '' }}:
+                </span>
+                <span class="font-bold text-green-600">${{ cuotaSugerida.toFixed(2) }}</span>
+              </div>
+              <div v-if="planLocal.num_plazos > 1" class="flex justify-between">
+                <span class="text-gray-500 dark:text-gray-400">Ultimo plazo (#{{ planLocal.num_plazos }}):</span>
+                <span class="font-bold text-orange-500">${{ (Number(planLocal.total_financiado) - (cuotaSugerida * (planLocal.num_plazos - 1))).toFixed(2) }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-500 dark:text-gray-400">Plazos:</span>
@@ -150,7 +156,7 @@
                 <!-- info de cuota sugerida y saldo maximo -->
                 <div class="flex justify-between mt-1">
                   <p class="text-xs text-gray-400">
-                    Cuota sugerida: <strong>${{ Number(planLocal.monto_cuota).toFixed(2) }}</strong>
+                    Cuota sugerida: <strong>${{ cuotaSugerida.toFixed(2) }}</strong>
                   </p>
                   <p class="text-xs text-gray-400">
                     Max: <strong>${{ Number(planLocal.saldo_pendiente).toFixed(2) }}</strong>
@@ -172,14 +178,15 @@
                     <i class="fa-solid fa-wallet text-gray-400 text-xs"></i>
                   </span>
                   <select
-                    v-model="metodoPago"
+                    :value="metodoPagoId"
+                    @change="onMetodoPagoChange(Number(($event.target as HTMLSelectElement).value))"
                     class="block w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
-                           bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
-                           focus:ring-1 focus:ring-green-400 transition text-sm"
+                          bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                          focus:ring-1 focus:ring-green-400 transition text-sm"
                   >
-                    <option value="efectivo">Efectivo</option>
-                    <option value="tarjeta">Tarjeta</option>
-                    <option value="transferencia">Transferencia</option>
+                    <option v-for="m in metodosPago" :key="m.id" :value="m.id">
+                      {{ m.nombre }}
+                    </option>
                   </select>
                 </div>
               </div>
@@ -284,6 +291,7 @@
 import { ref, computed, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { fetchPagosPlan, fetchPlanPago, registrarAbono } from '@/api/planes_pago'
+import { getMetodosPago } from '@/api/ventas'
 
 interface PlanPago {
   id: number
@@ -326,11 +334,14 @@ const planLocal = ref<PlanPago>({ ...props.plan })
 const pagos = ref<PagoPlan[]>([])
 const loading = ref(false)
 
+const metodosPago = ref<{ id: number; nombre: string }[]>([])
+
 // formulario abono
 const showFormAbono = ref(false)
 const loadingAbono = ref(false)
 const montoAbono = ref<number | undefined>(undefined)
-const metodoPago = ref('efectivo')
+const metodoPago    = ref<string>('')
+const metodoPagoId  = ref<number | null>(null)
 const notas = ref('')
 
 const nombreCliente = computed(() =>
@@ -353,7 +364,34 @@ const montoValido = computed(() => {
 
 onMounted(async () => {
   await cargarPagos()
-  montoAbono.value = Number(planLocal.value.monto_cuota)
+  montoAbono.value = cuotaSugerida.value
+
+  // cargar metodos de pago del establecimiento
+  try {
+    const res = await getMetodosPago()
+    metodosPago.value = res.data ?? []
+    if (metodosPago.value.length) {
+      metodoPago.value   = metodosPago.value[0].nombre
+      metodoPagoId.value = metodosPago.value[0].id
+    }
+  } catch {
+    metodosPago.value = []
+  }
+})
+
+function onMetodoPagoChange(id: number) {
+  const metodo = metodosPago.value.find(m => m.id === id)
+  if (metodo) {
+    metodoPago.value   = metodo.nombre
+    metodoPagoId.value = metodo.id
+  }
+}
+
+const cuotaSugerida = computed(() => {
+  const total = Number(planLocal.value.total_financiado)
+  const plazos = Number(planLocal.value.num_plazos)
+  if (plazos <= 0 || total <= 0) return 0
+  return Math.floor(total / plazos)
 })
 
 async function cargarPagos() {
@@ -396,10 +434,11 @@ async function confirmarAbono() {
   loadingAbono.value = true
   try {
     const res = await registrarAbono(planLocal.value.id, {
-      monto_pagado: montoAbono.value,
-      metodo_pago:  metodoPago.value,
-      notas:        notas.value || null,
-      usuario_id:   user.id,
+      monto_pagado:    montoAbono.value,
+      metodo_pago:     'Abono a credito',
+      metodo_pago_id:  null,
+      notas:           notas.value || null,
+      usuario_id:      user.id,
     })
 
     const estado = res.data?.estado_plan ?? res.data?.plan?.estado
@@ -411,7 +450,7 @@ async function confirmarAbono() {
     await Promise.all([recargarPlan(), cargarPagos()])
 
     // actualizamos el monto sugerido con el nuevo saldo
-    montoAbono.value = Number(planLocal.value.monto_cuota)
+    montoAbono.value = cuotaSugerida.value
 
     // notificamos al padre para que refresque la lista
     emits('abonado')

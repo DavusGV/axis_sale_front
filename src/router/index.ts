@@ -112,6 +112,8 @@ import ClientesView from '@/views/clientes/ClientesView.vue';
 import CreditoView from '@/views/credito/CreditoView.vue';
 import TipoGastosView from "@/views/finanzas/TipoGastosView.vue";
 import GastosView from "@/views/finanzas/GastosView.vue";
+import BalanceView from '@/views/finanzas/BalanceView.vue';
+import ReporteCreditoView from '@/views/reportes/ReporteCreditoView.vue';
 
 
 
@@ -819,6 +821,12 @@ const router = createRouter({
       meta: { requiresAuth: true } 
     },
     {
+      path: '/reportes/creditos',
+      name: 'ReporteCredito',
+      component: ReporteCreditoView,
+      meta: { requiresAuth: true } 
+    },
+    {
       path: '/Finanzas/tipogastos',
       name: 'tipogastos',
       component:  TipoGastosView,
@@ -829,7 +837,13 @@ const router = createRouter({
       name: 'gastos',
       component:  GastosView,
       meta: { requiresAuth: true }
-    }
+    },
+    {
+      path: '/Finanzas/balance',
+      name: 'Balance',
+      component:  BalanceView,
+      meta: { requiresAuth: true } 
+    },
 
     
   ],

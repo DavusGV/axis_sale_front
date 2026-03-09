@@ -281,7 +281,7 @@ function aplicarDescuentoProducto({ descuento_aplicado, tipo_descuento, descuent
   productoDescuento.value = null
 }
 
-async function registrarVentaLocal({ pago, metodo_pago, total_final, es_credito, credito }: any) {
+async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_final, es_credito, credito }: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const usuario_id = user.id
   const cambio = es_credito ? 0 : pago - total_final
@@ -315,6 +315,7 @@ async function registrarVentaLocal({ pago, metodo_pago, total_final, es_credito,
     pago,
     cambio,
     metodo_pago,
+    metodo_pago_id,
     detalles,
   }
 
