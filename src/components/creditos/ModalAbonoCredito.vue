@@ -128,7 +128,7 @@
                     </span>
                   </p>
                   <p class="text-xs text-gray-400 mt-1">
-                    {{ plan.num_plazos }} pagos {{ plan.tipo_plazo }} · Cuota ${{ Math.floor(Number(plan.total_financiado) / Number(plan.num_plazos)).toFixed(2) }}
+                    {{ etiquetaPlazo(plan.num_plazos, plan.tipo_plazo) }} · Cuota ${{ Math.floor(Number(plan.total_financiado) / Number(plan.num_plazos)).toFixed(2) }}
                   </p>
                 </div>
                 <div class="text-right">
@@ -332,6 +332,17 @@ const montoValido = computed(() => {
   if (montoAbono.value > Number(planSeleccionado.value.saldo_pendiente)) return false
   return true
 })
+
+function etiquetaPlazo(numPlazos: number, tipoPlazo: string): string {
+  if (tipoPlazo === 'dias') {
+    return `Cada ${numPlazos} dias`
+  } else if (tipoPlazo === 'semanal') {
+    return `${numPlazos} pagos semanales`
+  } else if (tipoPlazo === 'mensual') {
+    return `${numPlazos} pagos mensuales`
+  }
+  return `${numPlazos} ${tipoPlazo}`
+}
 
 function onMetodoPagoChange(id: number) {
   const metodo = metodosPago.value.find(m => m.id === id)

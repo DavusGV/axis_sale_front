@@ -135,8 +135,17 @@ function nombreCompleto(cliente: any) {
           autocomplete="off"
         />
       </div>
-      <button class="btn flex items-center gap-2 whitespace-nowrap" @click="abrirModalNuevo">
-        <i class="fa-solid fa-user-plus"></i>
+      <button
+        class="flex items-center gap-1.5 px-3 py-1.5
+              text-xs font-medium
+              bg-primary text-white
+              border border-primary
+              rounded-lg shadow-sm
+              hover:bg-transparent hover:text-primary
+              transition whitespace-nowrap"
+        @click="abrirModalNuevo"
+      >
+        <i class="fa-solid fa-user-plus text-[11px]"></i>
         Nuevo Cliente
       </button>
     </div>

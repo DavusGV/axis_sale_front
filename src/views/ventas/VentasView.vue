@@ -403,7 +403,13 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
         </div>
         <!-- boton para registrar abono desde ventas -->
         <button
-          class="btn flex items-center gap-2 whitespace-nowrap"
+          class="flex items-center gap-1.5 px-3 py-1.5
+              text-xs font-medium
+              bg-primary text-white
+              border border-primary
+              rounded-lg shadow-sm
+              hover:bg-transparent hover:text-primary
+              transition whitespace-nowrap"
           @click="showModalAbono = true"
         >
           <i class="fa-solid fa-hand-holding-dollar"></i>

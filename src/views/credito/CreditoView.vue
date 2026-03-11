@@ -36,6 +36,17 @@ const loading = ref(false)
 const filtroEstado = ref('activo')
 const planSeleccionado = ref<PlanPago | null>(null)
 
+function etiquetaPlazo(numPlazos: number, tipoPlazo: string): string {
+  if (tipoPlazo === 'dias') {
+    return `Cada ${numPlazos} dias`
+  } else if (tipoPlazo === 'semanal') {
+    return `${numPlazos} pago${numPlazos > 1 ? 's' : ''} semanal${numPlazos > 1 ? 'es' : ''}`
+  } else if (tipoPlazo === 'mensual') {
+    return `${numPlazos} pago${numPlazos > 1 ? 's' : ''} mensual${numPlazos > 1 ? 'es' : ''}`
+  }
+  return `${numPlazos} ${tipoPlazo}`
+}
+
 // buscador de cliente
 const searchCliente = ref('')
 let searchTimeout: ReturnType<typeof setTimeout> | undefined = undefined
@@ -235,7 +246,7 @@ function formatFecha(fecha: string) {
               {{ formatFecha(plan.fecha_proximo_pago) }}
             </td>
             <td class="px-4 py-3 text-gray-500 dark:text-gray-400 capitalize">
-              {{ plan.tipo_plazo }} · {{ plan.num_plazos }} plazos
+              {{ etiquetaPlazo(plan.num_plazos, plan.tipo_plazo) }}
             </td>
             <td class="px-4 py-3 text-center">
               <span :class="['px-2 py-1 rounded-full text-xs font-medium capitalize', etiquetaEstado(plan.estado)]">

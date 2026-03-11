@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
 
       <!-- encabezado -->
       <div class="flex items-center justify-between p-5 border-b dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
@@ -13,7 +13,7 @@
         </button>
       </div>
 
-      <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="p-5 grid grid-cols-1 gap-5" :class="showFormAbono ? 'md:grid-cols-3' : 'md:grid-cols-3'">
 
         <!-- columna izquierda -->
         <div class="md:col-span-1 flex flex-col gap-4">
@@ -77,7 +77,7 @@
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-500 dark:text-gray-400">Plazos:</span>
-                <span class="font-medium capitalize">{{ planLocal.num_plazos }} {{ planLocal.tipo_plazo }}</span>
+                <span class="font-medium">{{ etiquetaPlazo(planLocal.num_plazos, planLocal.tipo_plazo) }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-500 dark:text-gray-400">Inicio:</span>
@@ -129,97 +129,87 @@
               </button>
             </div>
 
-            <!-- formulario de abono inline -->
-            <div v-if="showFormAbono" class="mt-4 flex flex-col gap-3 border-t dark:border-gray-600 pt-4">
-              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Nuevo abono</p>
+          </div>
+        </div>
 
-              <div>
-                <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">
-                  Monto
-                </label>
-                <div class="relative">
-                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <i class="fa-solid fa-money-bill-wave text-gray-400 text-xs"></i>
-                  </span>
-                  <input
-                    v-model.number="montoAbono"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    :max="planLocal.saldo_pendiente"
-                    class="block w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
-                           bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
-                           focus:ring-1 focus:ring-green-400 transition text-sm"
-                    placeholder="0.00"
-                  />
-                </div>
-                <!-- info de cuota sugerida y saldo maximo -->
-                <div class="flex justify-between mt-1">
-                  <p class="text-xs text-gray-400">
-                    Cuota sugerida: <strong>${{ cuotaSugerida.toFixed(2) }}</strong>
-                  </p>
-                  <p class="text-xs text-gray-400">
-                    Max: <strong>${{ Number(planLocal.saldo_pendiente).toFixed(2) }}</strong>
-                  </p>
-                </div>
-                <!-- alerta si el monto excede el saldo -->
-                <p v-if="montoAbono && montoAbono > Number(planLocal.saldo_pendiente)"
-                   class="text-xs text-red-500 mt-1 font-medium">
-                  El monto no puede superar el saldo pendiente.
-                </p>
-              </div>
+              <!-- columna central: formulario de abono -->
+        <div v-if="showFormAbono" class="md:col-span-1 flex flex-col gap-3">
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex flex-col gap-3">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Nuevo abono</p>
 
-              <div>
-                <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">
-                  Metodo de pago
-                </label>
-                <div class="relative">
-                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <i class="fa-solid fa-wallet text-gray-400 text-xs"></i>
-                  </span>
-                  <select
-                    :value="metodoPagoId"
-                    @change="onMetodoPagoChange(Number(($event.target as HTMLSelectElement).value))"
-                    class="block w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
-                          bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
-                          focus:ring-1 focus:ring-green-400 transition text-sm"
-                  >
-                    <option v-for="m in metodosPago" :key="m.id" :value="m.id">
-                      {{ m.nombre }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">
-                  Notas <span class="text-gray-400">(opcional)</span>
-                </label>
-                <textarea
-                  v-model="notas"
-                  rows="2"
-                  class="block w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
-                         bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
-                         focus:ring-1 focus:ring-green-400 transition resize-none text-sm"
-                  placeholder="Observaciones..."
+            <div>
+              <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Monto</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <i class="fa-solid fa-money-bill-wave text-gray-400 text-xs"></i>
+                </span>
+                <input
+                  v-model.number="montoAbono"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  :max="planLocal.saldo_pendiente"
+                  class="block w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+                        bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                        focus:ring-1 focus:ring-green-400 transition text-sm"
+                  placeholder="0.00"
                 />
               </div>
-
-              <button
-                class="btn w-full justify-center text-sm"
-                @click="confirmarAbono"
-                :disabled="loadingAbono || !montoValido"
-              >
-                <i class="fa-solid fa-check"></i>
-                {{ loadingAbono ? 'Guardando...' : 'Confirmar abono' }}
-              </button>
+              <div class="flex justify-between mt-1">
+                <p class="text-xs text-gray-400">Cuota sugerida: <strong>${{ cuotaSugerida.toFixed(2) }}</strong></p>
+                <p class="text-xs text-gray-400">Max: <strong>${{ Number(planLocal.saldo_pendiente).toFixed(2) }}</strong></p>
+              </div>
+              <p v-if="montoAbono && montoAbono > Number(planLocal.saldo_pendiente)"
+                class="text-xs text-red-500 mt-1 font-medium">
+                El monto no puede superar el saldo pendiente.
+              </p>
             </div>
 
+            <div>
+              <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Metodo de pago</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <i class="fa-solid fa-wallet text-gray-400 text-xs"></i>
+                </span>
+                <select
+                  :value="metodoPagoId"
+                  @change="onMetodoPagoChange(Number(($event.target as HTMLSelectElement).value))"
+                  class="block w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+                        bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                        focus:ring-1 focus:ring-green-400 transition text-sm"
+                >
+                  <option v-for="m in metodosPago" :key="m.id" :value="m.id">{{ m.nombre }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">
+                Notas <span class="text-gray-400">(opcional)</span>
+              </label>
+              <textarea
+                v-model="notas"
+                rows="2"
+                class="block w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+                      bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                      focus:ring-1 focus:ring-green-400 transition resize-none text-sm"
+                placeholder="Observaciones..."
+              />
+            </div>
+
+            <button
+              class="btn w-full justify-center text-sm"
+              @click="confirmarAbono"
+              :disabled="loadingAbono || !montoValido"
+            >
+              <i class="fa-solid fa-check"></i>
+              {{ loadingAbono ? 'Guardando...' : 'Confirmar abono' }}
+            </button>
           </div>
         </div>
 
         <!-- columna derecha: historial -->
-        <div class="md:col-span-2">
+        <div :class="showFormAbono ? 'md:col-span-1' : 'md:col-span-2'">
           <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
             <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2 text-sm uppercase">
               <i class="fa-solid fa-clock-rotate-left"></i>
@@ -402,6 +392,17 @@ async function cargarPagos() {
   } finally {
     loading.value = false
   }
+}
+
+function etiquetaPlazo(numPlazos: number, tipoPlazo: string): string {
+  if (tipoPlazo === 'dias') {
+    return `Cada ${numPlazos} dias`
+  } else if (tipoPlazo === 'semanal') {
+    return `${numPlazos} pagos semanales`
+  } else if (tipoPlazo === 'mensual') {
+    return `${numPlazos} pagos mensuales`
+  }
+  return `${numPlazos} ${tipoPlazo}`
 }
 
 // recarga el plan completo desde el API
