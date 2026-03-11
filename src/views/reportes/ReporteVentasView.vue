@@ -71,6 +71,7 @@ onMounted(cargarReporte)
       <input
         type="date"
         v-model="filtro.desde"
+        @click="($event.target as HTMLInputElement).showPicker()"
         @change="cargarReporte"
         class="input w-full 
     bg-gray-50 text-gray-900 border-gray-300
@@ -86,6 +87,7 @@ onMounted(cargarReporte)
       <input
         type="date"
         v-model="filtro.hasta"
+        @click="($event.target as HTMLInputElement).showPicker()"
         @change="cargarReporte"
         class="input w-full 
     bg-gray-50 text-gray-900 border-gray-300
