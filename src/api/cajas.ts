@@ -2,7 +2,6 @@ import axiosInstance from '@/utils/axios'
 
 export async function fetchCajas() {
   const res = await axiosInstance.get('/cajas/', {
-
   })
   return res.data // { data: [...], total: ... }
 }
@@ -10,7 +9,6 @@ export async function fetchCajas() {
 // api/cajas.ts
 export async function fetchHistoryBox(boxId: number,params: { page: number })
 { const { data } = await axiosInstance.get(`/cajas/${boxId}/history`,{ params })
-
   return data
 }
 
