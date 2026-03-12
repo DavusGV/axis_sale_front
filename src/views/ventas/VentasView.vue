@@ -129,6 +129,7 @@ async function procesarCodigoEscaneado() {
         
       })
     }
+    
   } catch (error: any) {
     const mensaje = error.response?.data?.message || "Error desconocido"
     Swal.fire({

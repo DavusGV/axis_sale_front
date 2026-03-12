@@ -110,9 +110,6 @@ import EditarUsuarioView from '@/views/usuarios/[id]/editarView.vue'
 import IngresosView from "@/views/finanzas/IngresosView.vue";
 
 
-
-
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
