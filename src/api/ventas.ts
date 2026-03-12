@@ -74,3 +74,9 @@ export async function getMetodosPago() {
   const res = await axiosInstance.get('/finance/getmethodpay')
   return res.data
 }
+
+// obtiene los datos del ticket de una venta por su id
+export async function fetchTicket(ventaId: number) {
+    const res = await axiosInstance.get(`/ventas/${ventaId}/ticket`)
+    return res.data.data
+}

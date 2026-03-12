@@ -6,11 +6,13 @@ import Cart from '@/components/ventas/Cart.vue'
 import ResumenVenta from '@/components/ventas/ResumenVenta.vue'
 import ModalPago from '@/components/ventas/ModalPago.vue'
 import ModalDescuentoProducto from '@/components/ventas/ModalDescuentoProducto.vue'
-import { buscarPorCodigoBarras, registrarVenta, fetchProducts } from '@/api/ventas'
+import { buscarPorCodigoBarras, registrarVenta, fetchProducts, fetchTicket } from '@/api/ventas'
+import { fetchConfiguracion } from '@/api/configuracion'
 import { useAuthStore } from '@/stores/authStore'
 import { crearPlanPago } from '@/api/planes_pago'
 import Swal from 'sweetalert2'
 import ModalAbono from '@/components/creditos/ModalAbonoCredito.vue'
+import ModalTicket from '@/components/ventas/ModalTicket.vue'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
@@ -19,6 +21,7 @@ const search = ref('')
 const carrito = ref<any[]>([])
 const page = ref(1)
 const lastPage = ref(1)
+const configuracion = ref<any>(null)
 
 // El total se recalcula dinamicamente usando descuento y tipo_descuento
 // para que al cambiar la cantidad el descuento se ajuste correctamente
@@ -57,7 +60,9 @@ const showModalPago = ref(false)
 const defaultImg = '/images/home/vuejs.png'
 const loading = ref(false)
 const showModalAbono = ref(false)
-
+const showModalTicket = ref(false)
+const ticketData = ref<any>(null)
+  
 //NUEVAS VARIABLES PARA SCANNER
 let codigoBuffer = ''
 let timeoutScanner: ReturnType<typeof setTimeout> | null = null
@@ -91,6 +96,11 @@ watch(
 onMounted(async () => {
   await loadProducts()
   iniciarEscuchaScanner() // Activar scanner automatico
+  // cargamos la configuracion del establecimiento
+  try {
+    configuracion.value = await fetchConfiguracion()
+  } catch {
+  }
 })
 
 onUnmounted(() => {
@@ -347,13 +357,10 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     await loadProducts()
     Swal.close()
 
-    Swal.fire({
-      icon: 'success',
-      title: es_credito ? 'Venta a credito registrada!' : 'Venta realizada!',
-      text: resultado.message || 'La venta se registro correctamente.',
-      confirmButtonText: 'Cerrar',
-      confirmButtonColor: '#22c55e'
-    })
+    // cargamos el ticket con los datos de la venta recien registrada
+    const ticket = await fetchTicket(resultado.data.venta.id)
+    ticketData.value = ticket.ticket
+    showModalTicket.value = true
 
   } catch (e: any) {
     Swal.close()
@@ -519,6 +526,14 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
       :item="productoDescuento"
       @close="showModalDescuentoProducto = false"
       @confirmar="aplicarDescuentoProducto"
+    />
+
+    <ModalTicket
+      v-if="showModalTicket && ticketData"
+      :ticket="ticketData"
+      :impresora_ancho="configuracion?.impresora_ancho ?? 80"
+      :impresora_alto="configuracion?.impresora_alto ?? 200"
+      @close="showModalTicket = false"
     />
   </div>
 </template>

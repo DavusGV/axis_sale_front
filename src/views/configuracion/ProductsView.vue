@@ -29,6 +29,7 @@ const columns = [
   { key: 'descripcion', label: 'Descripción' },
   { key: 'precio_compra', label: 'Precio Compra' },
   { key: 'precio_venta', label: 'Precio Venta' },
+  { key: 'iva', label: 'IVA (%)' },
   { key: 'stock', label: 'Stock' },
   { key: 'categoria', label: 'Categoría' },
 ]

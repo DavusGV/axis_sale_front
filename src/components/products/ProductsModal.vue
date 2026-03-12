@@ -87,6 +87,28 @@
             <input v-model.number="form.precio_venta" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required />
           </div>
 
+          <!-- IVA -->
+          <div>
+            <label class="block text-sm mb-1">IVA (%)</label>
+            <div class="relative">
+              <input
+                v-model.number="form.iva"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="Ej: 16"
+                class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 pr-8"
+              />
+              <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 text-sm pointer-events-none">
+                %
+              </span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">
+              Dejar vacio si el producto esta exento de IVA.
+            </p>
+          </div>
+
           <!-- STOCK -->
           <div>
             <label class="block text-sm mb-1">Stock</label>
@@ -132,6 +154,7 @@ const form = ref<any>({
   descripcion: '',
   precio_compra: 0,
   precio_venta: 0,
+  iva: null,
   stock: 0,
   categoria_id: '',
   imagen: null
@@ -165,6 +188,7 @@ function resetForm() {
     descripcion: '',
     precio_compra: 0,
     precio_venta: 0,
+    iva: null,
     stock: 0,
     categoria_id: '',
     imagen: null
