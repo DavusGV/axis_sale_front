@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
-
+import { IconEye, IconEyeOff } from '@tabler/icons-vue'
 
 import {
   getUserById,
@@ -36,7 +36,8 @@ const selectedEstablecimientoId = ref<number | ''>('')
 const originalAssignedIds = ref<number[]>([])
 const toAssign = ref<number[]>([])
 const toUnassign = ref<number[]>([])
-
+const mostrarPassword = ref(false)
+const mostrarPasswordConfirm = ref(false)
 
 // ---------------- LOAD DATA ----------------
 async function loadUser() {
@@ -224,24 +225,44 @@ function removeEstablecimiento(id: number) {
 
             <div>
               <label class="md:text-lg font-medium block mb-2">Contraseña</label>
-              <input
-                v-model="form.password"
-                type="password"
-                class="w-full text-sm focus:outline-none bg-n0 dark:bg-bg4
-                       border border-n30 dark:border-n500 rounded-3xl px-6 py-3"
-              />
+              <div class="relative">
+                <input
+                  v-model="form.password"
+                  :type="mostrarPassword ? 'text' : 'password'"
+                  class="w-full text-sm focus:outline-none bg-n0 dark:bg-bg4
+                        border border-n30 dark:border-n500 rounded-3xl px-6 py-3 pr-12"
+                />
+                <button
+                  type="button"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 text-n500 hover:text-primary"
+                  @click="mostrarPassword = !mostrarPassword"
+                >
+                  <IconEyeOff v-if="mostrarPassword" :size="18" />
+                  <IconEye v-else :size="18" />
+                </button>
+              </div>
             </div>
 
             <div>
               <label class="md:text-lg font-medium block mb-2">
                 Confirmar contraseña
               </label>
-              <input
-                v-model="form.password_confirmation"
-                type="password"
-                class="w-full text-sm focus:outline-none bg-n0 dark:bg-bg4
-                       border border-n30 dark:border-n500 rounded-3xl px-6 py-3"
-              />
+              <div class="relative">
+                <input
+                  v-model="form.password_confirmation"
+                  :type="mostrarPasswordConfirm ? 'text' : 'password'"
+                  class="w-full text-sm focus:outline-none bg-n0 dark:bg-bg4
+                        border border-n30 dark:border-n500 rounded-3xl px-6 py-3 pr-12"
+                />
+                <button
+                  type="button"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 text-n500 hover:text-primary"
+                  @click="mostrarPasswordConfirm = !mostrarPasswordConfirm"
+                >
+                  <IconEyeOff v-if="mostrarPasswordConfirm" :size="18" />
+                  <IconEye v-else :size="18" />
+                </button>
+              </div>
             </div>
 
           </div>

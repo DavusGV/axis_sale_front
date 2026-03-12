@@ -25,7 +25,18 @@ function getMonthRange() {
 const filtro = ref(getMonthRange())
 const loading = ref(false)
 const error = ref('')
-const data = ref<{ productos: any[]; totales: any }>({ productos: [], totales: { inversion: 0, vendido: 0, ganancia: 0 } })
+const data = ref<{ productos: any[]; totales: any }>({
+  productos: [],
+  totales: {
+    inversion: 0,
+    vendido: 0,
+    cobrado_real: 0,
+    ganancia_real: 0,
+    pendiente_credito: 0,
+    cobrado_contado: 0,
+    cobrado_credito: 0,
+  }
+})
 
 async function cargarReporte() {
   loading.value = true
@@ -60,6 +71,7 @@ onMounted(cargarReporte)
       <input
         type="date"
         v-model="filtro.desde"
+        @click="($event.target as HTMLInputElement).showPicker()"
         @change="cargarReporte"
         class="input w-full 
     bg-gray-50 text-gray-900 border-gray-300
@@ -75,6 +87,7 @@ onMounted(cargarReporte)
       <input
         type="date"
         v-model="filtro.hasta"
+        @click="($event.target as HTMLInputElement).showPicker()"
         @change="cargarReporte"
         class="input w-full 
     bg-gray-50 text-gray-900 border-gray-300

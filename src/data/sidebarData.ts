@@ -53,7 +53,9 @@ export const sidebarData = [
                 submenus: [
                     { title: "Productos", url: "/configuracion/productos" },
                     { title: "Cajas", url: "/cajas" },
-                    { title: "Ventas", url: "/ventas/ventas" }
+                    { title: "Ventas", url: "/ventas/ventas" },
+                    { title: "Clientes", url: "/clientes" },
+                    { title: "Creditos", url: "/credito" },
                 ],
             },
             {
@@ -61,10 +63,10 @@ export const sidebarData = [
                 name: "Finanzas",
                 icon: IconCoins,
                 submenus: [
-                    { title: "Tipo de Gasto", url: "/dashboards/analytics" },
-                    { title: "Gastos", url: "/dashboards/analytics" },
+                    { title: "Tipo de Gasto", url: "/finanzas/tipogastos" },
+                    { title: "Gastos", url: "/finanzas/gastos" },
                     { title: "Ingresos", url: "/finanzas/ingresos" },
-                    { title: "Balance", url: "/dashboards/stock" },
+                    { title: "Balance", url: "/finanzas/balance" },
                 ],
             },
             {
@@ -73,6 +75,7 @@ export const sidebarData = [
                 icon: IconReportAnalytics,
                 submenus: [
                     { title: "Ventas", url: "/reportes/ventas" },
+                    { title: "Creditos", url: "/reportes/creditos" },
                 ],
             },
          /*    {

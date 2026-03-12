@@ -2,10 +2,12 @@
 import { computed, onMounted, ref } from 'vue'
 import AnimateHeight from 'vue-animate-height'
 import { useAuthStore } from '@/stores/authStore';
+
 const activeMenu = ref('')
 const { theme } = useLayoutStore()
 // esto solo se esta agregando para ocultar el IAM para todos los uauarios excepto uno
-const { isMainUser } =useAuthStore ()
+const authStore = useAuthStore()
+const { isMainUser } = authStore
 const props = defineProps<{
   isSidebarOpen: boolean
   toggleSidebar: () => void
@@ -17,6 +19,10 @@ import { IconChevronRight, IconX, IconLogout } from '@tabler/icons-vue'
 import { sidebarData } from '@/data/sidebarData'
 import useWindowSize from '@/utils/useWindowSize'
 import { useLayoutStore } from '@/stores/layoutStore'
+
+function handleLogout() {
+  authStore.logout()
+}
 
 //agregamos este filtro para ocultar IAM
 const filteredSidebarData = computed(() => {
@@ -140,14 +146,14 @@ const isActive = (submenus: any[]) => {
           </div>
         </div>
         <div class="px-4 xxl:px-6 xxxl:px-8 pb-28">
-          <RouterLink to="/login-1" class="px-4 w-full group flex justify-between items-center xxxl:px-6 py-2.5 lg:py-3 rounded-2xl hover:bg-primary hover:text-n0 duration-300">
-            <span class="flex items-center gap-2">
-              <span class="text-primary group-hover:text-n0">
-                <IconLogout class="w-5 h-5 lg:w-6 lg:h-6" />
-              </span>
-              <span class="text-sm">Log Out</span>
+        <button @click="handleLogout" class="px-4 w-full group flex justify-between items-center xxxl:px-6 py-2.5 lg:py-3 rounded-2xl hover:bg-primary hover:text-n0 duration-300">
+          <span class="flex items-center gap-2">
+            <span class="text-primary group-hover:text-n0">
+              <IconLogout class="w-5 h-5 lg:w-6 lg:h-6" />
             </span>
-          </RouterLink>
+            <span class="text-sm">Cerrar sesion</span>
+          </span>
+        </button>
         </div>
       </div>
     </aside>

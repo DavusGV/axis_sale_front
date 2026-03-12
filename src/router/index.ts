@@ -72,7 +72,7 @@ import ActionTwoViewVue from '@/views/subpages/ActionTwoView.vue';
 import EditProfileVue from '@/views/subpages/EditProfile.vue';
 import EmptySearchViewVue from '@/views/subpages/EmptySearchView.vue';
 import NotificationsViewVue from '@/views/subpages/NotificationsView.vue';
-import ProfileViewVue from '@/views/subpages/ProfileView.vue';
+import ProfileViewVue from '@/views/profile/ProfileView.vue';
 import SassBillingViewVue from '@/views/subpages/SassBillingView.vue';
 import SearchResultViewVue from '@/views/subpages/SearchResultView.vue';
 import SettingsViewVue from '@/views/subpages/SettingsView.vue';
@@ -108,6 +108,12 @@ import ReporteVentasView from "@/views/reportes/ReporteVentasView.vue";
 import EstablecimientoView from '@/views/establecimiento/EstablecimientoView.vue';
 import EditarUsuarioView from '@/views/usuarios/[id]/editarView.vue'
 import IngresosView from "@/views/finanzas/IngresosView.vue";
+import ClientesView from '@/views/clientes/ClientesView.vue';
+import CreditoView from '@/views/credito/CreditoView.vue';
+import TipoGastosView from "@/views/finanzas/TipoGastosView.vue";
+import GastosView from "@/views/finanzas/GastosView.vue";
+import BalanceView from '@/views/finanzas/BalanceView.vue';
+import ReporteCreditoView from '@/views/reportes/ReporteCreditoView.vue';
 
 
 const router = createRouter({
@@ -600,13 +606,6 @@ const router = createRouter({
 
     },
     {
-      path: '/profile',
-      name: 'profile',
-      component: ProfileViewVue,
-      meta: { requiresAuth: true } 
-
-    },
-    {
       path: '/edit-profile',
       name: 'editprofile',
       component: EditProfileVue,
@@ -757,6 +756,13 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/profile',
+      name: 'profile',
+      component: ProfileViewVue,
+      meta: { requiresAuth: true } 
+
+    },
+    {
       path: '/configuracion/productos',
       name: 'productos',
       component: ProductosView,
@@ -797,6 +803,42 @@ const router = createRouter({
       path: '/Finanzas/ingresos',
       name: 'ingresos',
       component:  IngresosView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/clientes',
+      name: 'Cliente',
+      component:  ClientesView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/credito',
+      name: 'Plan de Pago',
+      component:  CreditoView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/reportes/creditos',
+      name: 'ReporteCredito',
+      component: ReporteCreditoView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/Finanzas/tipogastos',
+      name: 'tipogastos',
+      component:  TipoGastosView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/Finanzas/gastos',
+      name: 'gastos',
+      component:  GastosView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/Finanzas/balance',
+      name: 'Balance',
+      component:  BalanceView,
       meta: { requiresAuth: true } 
     },
 

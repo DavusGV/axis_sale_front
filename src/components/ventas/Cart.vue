@@ -26,13 +26,17 @@
         <div class="text-xl text-gray-400 dark:text-gray-500">
           ${{ item.precio }} x {{ item.cantidad }}
         </div>
+        <div v-if="item.descuento" class="text-xs text-green-600">
+          Desc: {{ item.tipo_descuento === 'porcentaje' ? item.descuento + '%' : '$' + item.descuento }}
+          (-${{ item.descuento_aplicado?.toFixed(2) }})
+        </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1 flex-shrink-0">
 
         <!-- restar -->
         <button 
-          class="w-9 h-9 flex items-center justify-center rounded-full 
+          class="w-8 h-8 flex items-center justify-center rounded-full 
                  bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200
                  hover:bg-gray-300 dark:hover:bg-gray-600 transition"
           @click="$emit('restar', item.producto_id)"
@@ -45,7 +49,7 @@
         </span>
 
 
-        <button class="w-9 h-9 flex items-center justify-center rounded-full 
+        <button class="w-8 h-8 flex items-center justify-center rounded-full 
                  bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200
                  hover:bg-gray-300 dark:hover:bg-gray-600 transition"
           @click="$emit('sumar', item.producto_id)"
@@ -53,12 +57,20 @@
           <i class="fa-solid fa-plus text-xs"></i>
         </button>
 
-        <button class="w-9 h-9 flex items-center justify-center rounded-full 
+        <button class="w-8 h-8 flex items-center justify-center rounded-full 
                  bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300
                  hover:bg-red-200 dark:hover:bg-red-800 transition"
           @click="$emit('eliminar', item.producto_id)"
         >
           <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+
+        <button class="w-8 h-8 flex items-center justify-center rounded-full 
+                 bg-red-100 dark:bg-blue-900 text-blue-600 dark:text-red-300
+                 hover:bg-blue-200 dark:hover:bg-red-800 transition"
+          @click="$emit('descuento', item.producto_id)"
+        >
+          <i class="fa-solid fa-tag text-sm"></i>
         </button>
 
       </div>
@@ -68,5 +80,5 @@
 
 <script setup>
 defineProps(['items', 'img'])
-defineEmits(['sumar', 'restar', 'eliminar'])
+defineEmits(['sumar', 'restar', 'eliminar', 'descuento'])
 </script>
