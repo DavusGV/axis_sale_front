@@ -28,7 +28,7 @@ const profileLinks = [
   },
   {
     icon: IconLogout,
-    url: '/login',
+    url: '',
     title: 'Cerrar Sesion',
     action: () => authStore.logout()
   }
@@ -41,14 +41,20 @@ onClickOutside(target, () => (isOpen.value = false))
 <template>
   <div class="relative" ref="target">
     <div @click="isOpen = !isOpen" class="cursor-pointer">
-      <img src="/images/user.png" class="rounded-full w-10 h-10 md:w-12 md:h-12" :width="48" :height="48" alt="profile img" />
+      <img v-if="authStore.user.foto_perfil" :src="authStore.user.foto_perfil" class="rounded-full w-10 h-10 md:w-12 md:h-12 object-cover" :width="48" :height="48" alt="profile img"  @error="authStore.user.foto_perfil = null" />
+      <div v-else class="rounded-full w-10 h-10 md:w-12 md:h-12 bg-primary/10 flex items-center justify-center" >
+        <IconUser :size="22" class="text-primary" />
+      </div>
     </div>
     <div
       class="bg-n0 border dark:border-n500 ltr:origin-top-right rtl:origin-top-left dark:bg-n800 rounded-md ltr:right-0 rtl:left-0 shadow-lg absolute top-full duration-300 z-10"
       :class="{ 'opacity-100 scale-100 visible': isOpen, 'opacity-0 scale-0 invisible': !isOpen }"
     >
       <div class="flex flex-col text-center items-center lg:p-4 p-3 border-b dark:border-n500">
-        <img src="/images/user.png" :width="60" :height="60" class="rounded-full" alt="profile img" />
+        <img v-if="authStore.user.foto_perfil" :src="authStore.user.foto_perfil" :width="60" :height="60" class="rounded-full object-cover" alt="profile img" @error="authStore.user.foto_perfil = null" />
+        <div v-else class="w-[60px] h-[60px] rounded-full bg-primary/10 flex items-center justify-center" >
+          <IconUser :size="28" class="text-primary" />
+        </div>
         <h6 class="mt-2">{{ authStore.user.name }}</h6>
         <span class="text-sm">{{ authStore.user.email }}</span>
       </div>

@@ -46,38 +46,42 @@
         </div>
 
         <!-- PASSWORD -->
-        <div>
-          <label class="block text-sm mb-1">Contraseña</label>
+        <div class="relative">
           <input
-            v-model="form.password"
-            type="password"
+            v-model="form.password" :type="mostrarPassword ? 'text' : 'password'"
             @input="clearError('password')"
-            placeholder="Mínimo 8 caracteres"
+            placeholder="Minimo 8 caracteres"
             class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-            :class="{ 'border-red-500': errors.password }"
-          />
-          <p class="text-xs text-gray-500 mt-1">
-            Mínimo 8 caracteres
-          </p>
-          <p v-if="errors.password" class="text-red-500 text-xs mt-1">
-            {{ errors.password[0] }}
-          </p>
+            :class="{ 'border-red-500' : errors.password} "
+          />    
+          <button
+            type="button"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 text-sm"
+            @click="mostrarPassword = !mostrarPassword"
+          >
+            <IconEyeOff v-if="mostrarPassword" :size="18" />
+            <IconEye v-else :size="18" />
+          </button>      
         </div>
 
         <!-- CONFIRMAR -->
-        <div>
-          <label class="block text-sm mb-1">Confirmar contraseña</label>
+        <div class="relative">
           <input
             v-model="form.password_confirmation"
-            type="password"
+            :type="mostrarPasswordConfirm ? 'text' : 'password'"
             @input="clearError('password_confirmation')"
-            placeholder="Repite la contraseña"
+            placeholder="Repite la contrasena"
             class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
             :class="{ 'border-red-500': errors.password_confirmation }"
           />
-          <p v-if="errors.password_confirmation" class="text-red-500 text-xs mt-1">
-            {{ errors.password_confirmation[0] }}
-          </p>
+          <button
+              type="button"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 text-sm"
+              @click="mostrarPasswordConfirm = !mostrarPasswordConfirm"
+          >
+            <IconEyeOff v-if="mostrarPasswordConfirm" :size="18" />
+            <IconEye v-else :size="18" />
+          </button>
         </div>
 
         <!-- ACTIONS -->
@@ -99,6 +103,7 @@
 import { ref, watch } from 'vue'
 import Swal from 'sweetalert2'
 import { createUser } from '@/api/user'
+import { IconEye, IconEyeOff } from '@tabler/icons-vue'
 
 const props = defineProps<{ show: boolean }>()
 const emit = defineEmits(['close', 'success'])
@@ -112,6 +117,9 @@ const form = ref({
 
 const errors = ref<Record<string, string[]>>({})
 const isSubmitting = ref(false)
+// mostrar contraseña
+const mostrarPassword = ref(false)
+const mostrarPasswordConfirm = ref(false)
 
 watch(() => props.show, (val) => {
   if (!val) return

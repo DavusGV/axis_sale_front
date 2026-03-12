@@ -7,6 +7,7 @@ export interface VentaData {
   pago: number
   cambio: number
   metodo_pago: string
+  metodo_pago_id: number | null 
   detalles: Array<{
     producto_id: number
     cantidad: number
@@ -66,5 +67,10 @@ export async function registrarVenta(ventaData: VentaData) {
 //función para obtener las ventas del dia
 export async function getIncome(payload: payload) {
   const res = await axiosInstance.post('/finance/getIncome', payload)
+  return res.data
+}
+
+export async function getMetodosPago() {
+  const res = await axiosInstance.get('/finance/getmethodpay')
   return res.data
 }

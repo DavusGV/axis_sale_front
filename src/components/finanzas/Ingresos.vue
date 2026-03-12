@@ -4,6 +4,12 @@ const props = defineProps<{
   methodpay: string[]
 }>()
 
+// dia actual para resaltar la fila
+const hoy = new Date()
+const diaActual = hoy.getDate()
+const mesActual = hoy.getMonth() + 1
+const anioActual = hoy.getFullYear()
+
 // Colores suaves por método (light + dark)
 const colores: Record<string, string> = {
   efectivo:
@@ -12,6 +18,8 @@ const colores: Record<string, string> = {
     'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
   transferencia:
     'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+  credito:
+    'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
 }
 </script>
 
@@ -42,13 +50,16 @@ const colores: Record<string, string> = {
 
         <!-- BODY -->
         <tbody>
-          <tr
-            v-for="(dia, index) in income"
-            :key="index"
-            class="transition rounded-xl
-                   bg-gray-50 dark:bg-gray-700
-                   hover:bg-gray-100 dark:hover:bg-gray-600"
-          >
+        <tr
+          v-for="(dia, index) in income"
+          :key="index"
+          :class="[
+            'transition rounded-xl',
+            dia.date === diaActual
+              ? 'bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 hover:bg-green-100 dark:hover:bg-green-900/30'
+              : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+          ]"
+        >
             <td class="px-3 py-2 font-medium capitalize text-gray-700 dark:text-gray-200 text-xs">
               {{ dia.name }}
             </td>
@@ -65,7 +76,7 @@ const colores: Record<string, string> = {
             >
               <span
                 class="px-3 py-1 rounded-lg text-sm font-medium inline-block min-w-[72px] text-center text-xs cursor-pointer"
-                :class="colores[metodo] || 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'"
+                :class="colores[metodo.toLowerCase()] || 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'"
                 :title="metodo"
 
               >
@@ -93,7 +104,7 @@ const colores: Record<string, string> = {
               
             >
             <span class="px-3 py-1 rounded-lg text-sm font-medium inline-block min-w-[72px] text-center text-xs cursor-pointer"
-              :class="colores[metodo] || 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'"
+              :class="colores[metodo.toLowerCase()] || 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'"
                 :title="metodo"
               >
               ${{ income.reduce((sum, dia) => sum + (dia.paymentMethod?.[metodo] ?? 0), 0).toFixed(2) }}

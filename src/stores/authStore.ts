@@ -102,18 +102,21 @@ export const useAuthStore = defineStore('auth', () => {
           Authorization: `Bearer ${token.value}`
         }
       })
+    } catch (error: any) {
+      console.error('Error al cerrar sesion en el servidor:', error)
+    } finally {
+      // limpiar siempre, aunque falle el backend
       token.value = ''
       user.value = {}
+      establishments.value = []
+      establishmentActive.value = null
+
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      localStorage.removeItem('establishments')
+      localStorage.removeItem('establishmentActive')
+
       router.push('/login')
-    } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al cerrar sesión',
-        text: 'Ocurrió un error inesperado. Por favor, intenta nuevamente'
-      })
-      console.error('Error al cerrar sesión:', error)
     }
   }
 
@@ -125,6 +128,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   })
 
+  const refreshUser = async () => {
+    try {
+      const res = await axiosInstance.get('perfil')
+      const updatedUser = res.data.data.user
+      user.value = updatedUser
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+    } catch (e) {
+      console.error('Error al refrescar usuario:', e)
+    }
+  }
 
-  return { token, user, isMainUser, establishments, establishmentActive, loading, login, logout }
+  return { token, user, isMainUser, establishments, establishmentActive, loading, login, logout, refreshUser }
 })
