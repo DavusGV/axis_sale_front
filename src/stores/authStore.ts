@@ -128,6 +128,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   })
 
+  const refreshUser = async () => {
+    try {
+      const res = await axiosInstance.get('perfil')
+      const updatedUser = res.data.data.user
+      user.value = updatedUser
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+    } catch (e) {
+      console.error('Error al refrescar usuario:', e)
+    }
+  }
 
-  return { token, user, isMainUser, establishments, establishmentActive, loading, login, logout }
+  return { token, user, isMainUser, establishments, establishmentActive, loading, login, logout, refreshUser }
 })

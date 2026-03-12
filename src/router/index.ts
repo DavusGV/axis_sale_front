@@ -72,7 +72,7 @@ import ActionTwoViewVue from '@/views/subpages/ActionTwoView.vue';
 import EditProfileVue from '@/views/subpages/EditProfile.vue';
 import EmptySearchViewVue from '@/views/subpages/EmptySearchView.vue';
 import NotificationsViewVue from '@/views/subpages/NotificationsView.vue';
-import ProfileViewVue from '@/views/subpages/ProfileView.vue';
+import ProfileViewVue from '@/views/profile/ProfileView.vue';
 import SassBillingViewVue from '@/views/subpages/SassBillingView.vue';
 import SearchResultViewVue from '@/views/subpages/SearchResultView.vue';
 import SettingsViewVue from '@/views/subpages/SettingsView.vue';
@@ -609,13 +609,6 @@ const router = createRouter({
 
     },
     {
-      path: '/profile',
-      name: 'profile',
-      component: ProfileViewVue,
-      meta: { requiresAuth: true } 
-
-    },
-    {
       path: '/edit-profile',
       name: 'editprofile',
       component: EditProfileVue,
@@ -764,6 +757,13 @@ const router = createRouter({
       name: 'usuarios-editar',
       component: EditarUsuarioView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: ProfileViewVue,
+      meta: { requiresAuth: true } 
+
     },
     {
       path: '/configuracion/productos',
