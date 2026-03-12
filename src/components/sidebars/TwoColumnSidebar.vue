@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 const activeMenu = ref('Personal')
 const { theme } = useLayoutStore()
 const props = defineProps<{
@@ -13,9 +13,23 @@ import { IconX } from '@tabler/icons-vue'
 import { sidebarData } from '@/data/sidebarData'
 import useWindowSize from '@/utils/useWindowSize'
 import { useLayoutStore } from '@/stores/layoutStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const router = useRouter()
 const pathName = ref(router.currentRoute.value.fullPath)
+
+const authStore = useAuthStore()
+const { isMainUser } = authStore
+
+const filteredSidebarData = computed(() => {
+  return sidebarData.filter(sidebar => {
+    if (sidebar.title === 'IAM') {
+      return isMainUser
+    }
+    return true
+  })
+})
+
 
 const updateActiveMenu = async () => {
   await router.isReady()
@@ -69,7 +83,7 @@ const handleRouteClick = () => {
           </div>
           <div class="overflow-y-auto fixed h-full sidebar-hovered">
             <div class="px-4 xxxl:px-6 pb-28">
-              <div v-for="{ id, items } in sidebarData" :key="id">
+              <div v-for="{ id, items } in filteredSidebarData" :key="id">
                 <ul class="mb-5 flex flex-col gap-4 xxxl:gap-6 border-t-2 border-dashed border-primary/20 pt-4 lg:pt-6">
                   <li v-for="{ id, icon, name } in items" :key="id" class="inline-block rounded-xl duration-300">
                     <button

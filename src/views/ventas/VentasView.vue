@@ -483,7 +483,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     </div>
 
     <!-- Carrito y Resumen -->
-    <div class="w-full md:w-1/3">
+    <div class="w-full md:w-1/3 pr-9">
       <Cart
         :items="carritoConDescuento"
         :img="defaultImg"

@@ -4,9 +4,13 @@ import { useLayoutStore } from '@/stores/layoutStore'
 import useWindowSize from '@/utils/useWindowSize'
 import { IconChevronRight } from '@tabler/icons-vue'
 import { IconX } from '@tabler/icons-vue'
-import { onMounted, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import AnimateHeight from 'vue-animate-height'
 import { useRouter, RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
+
+const authStore = useAuthStore()
+const { isMainUser } = authStore
 const activeMenu = ref('')
 const router = useRouter()
 const pathName = ref(router.currentRoute.value.fullPath)
@@ -16,6 +20,15 @@ const props = defineProps<{
   toggleSidebar: () => void
   setSidebar: (value: boolean) => void
 }>()
+
+const filteredSidebarData = computed(() => {
+  return sidebarData.filter(sidebar => {
+    if (sidebar.title === 'IAM') {
+      return isMainUser
+    }
+    return true
+  })
+})
 
 function setActiveMenu(name: string) {
   if (activeMenu.value == name) {
@@ -78,7 +91,7 @@ const isActive = (submenus: any[]) => {
       </div>
       <div class="overflow-y-auto fixed right-0 left-0 h-full sidebar-hovered">
         <div class="px-4 group-hover:lg:px-6 group-hover:xxl:px-8 pb-24">
-          <div v-for="{ id, items, title } in sidebarData" :key="id">
+          <div v-for="{ id, items, title } in filteredSidebarData" :key="id">
             <p class="text-xs font-semibold py-3 group-hover:xxl:py-6 border-t-2 border-dashed border-primary/20">
               <span class="xxl:hidden group-hover:block text-xs">{{ title }}</span>
             </p>

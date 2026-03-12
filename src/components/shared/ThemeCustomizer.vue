@@ -28,6 +28,17 @@ watch(
 onMounted(() => {
   document.documentElement.style.setProperty('--primary-color', currentColor.value)
 })
+
+const layoutLabels: Record<string, string> = {
+  'Vertical':   'Vertical',
+  'Two Column': 'Dos Columnas',
+  'Hovered':    'Flotante',
+  'Horizontal': 'Horizontal'
+}
+const directionLabels: Record<string, string> = {
+  ltr: "Izquierda a derecha",
+  rtl: "Derecha a izquierda"
+}
 </script>
 
 <template>
@@ -46,18 +57,18 @@ onMounted(() => {
     >
       <div class="p-4 flex justify-between items-center border-b border-n30 dark:border-n500">
         <div>
-          <h5 class="h5 mb-2">Theme customizer</h5>
-          <p class="text-sm">Customize & Preview in Real Time</p>
+          <h5 class="h5 mb-2">Personalización</h5>
+          <p class="text-sm">Personaliza y previsualiza en tiempo real</p>
         </div>
         <button @click="$emit('toggleCustomizer')">
           <IconX />
         </button>
       </div>
       <div class="p-4 border-b border-n30 dark:border-n500">
-        <span class="mb-3 text-n60 block text-sm">Themeing</span>
-        <h6 class="h6 mb-3">Color Mode</h6>
+        <span class="mb-3 text-n60 block text-sm">Apariencia</span>
+        <h6 class="h6 mb-3">Tema de color</h6>
         <div class="flex gap-x-5 justify-between gap-y-3">
-          <p>Dark</p>
+          <p>Oscuro</p>
           <label class="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
@@ -70,7 +81,7 @@ onMounted(() => {
             ></div>
           </label>
         </div>
-        <h6 class="h6 mb-5 mt-6">Presets</h6>
+        <h6 class="h6 mb-5 mt-6">Colores</h6>
         <div class="grid grid-cols-5 place-items-center gap-3">
           <div v-for="color in colors" :key="color" class="col-span-1">
             <div class="size-10 flex items-center justify-center">
@@ -87,29 +98,29 @@ onMounted(() => {
         </div>
       </div>
       <div class="p-4 border-b border-n30 dark:border-n500">
-        <span class="mb-3 text-n60 block text-sm">Layout</span>
-        <h6 class="h6 mb-3">Direction</h6>
+        <span class="mb-3 text-n60 block text-sm">Disposición</span>
+        <h6 class="h6 mb-3">Dirección</h6>
         <div class="flex gap-x-5 gap-y-3 flex-wrap mb-7">
           <div v-for="singleDir in directions" :key="singleDir" class="flex items-center">
             <button
               :class="{ 'bg-primary text-n0 border-primary': singleDir == theme.dir }"
-              class="px-5 capitalize py-1.5 rounded-lg border dark:border-n500"
+              class="px-5 py-1.5 rounded-lg border dark:border-n500"
               @click="changeDir(singleDir)"
             >
-              {{ singleDir }}
+              {{ directionLabels[singleDir] ?? singleDir }}
             </button>
           </div>
         </div>
 
-        <h6 class="h6 mb-3">Sidebar</h6>
+        <h6 class="h6 mb-3">Barra lateral</h6>
         <div class="flex gap-x-5 gap-y-3 flex-wrap">
           <div v-for="singleLayout in layoutList" :key="singleLayout" class="flex items-center">
             <button
               :class="{ 'bg-primary text-n0 border-primary': singleLayout == theme.layout }"
-              class="px-5 capitalize py-1.5 rounded-lg border dark:border-n500"
+              class="px-5 py-1.5 rounded-lg border dark:border-n500"
               @click="changeLayout(singleLayout)"
             >
-              {{ singleLayout }}
+              {{ layoutLabels[singleLayout] ?? singleLayout }}
             </button>
           </div>
         </div>
