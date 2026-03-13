@@ -49,7 +49,7 @@ const chartOptions = computed(() => ({
     sparkline: { enabled: false },
   },
   labels: ['Ingresos', 'Gastos'],
-  colors: ['#10B981', '#EF4444'],
+  colors: ['#10B981', '#3B82F6'],
   plotOptions: {
     pie: {
       startAngle: -90,
@@ -61,8 +61,8 @@ const chartOptions = computed(() => ({
           show: true,
           total: {
             show: true,
-            label: esGanancia.value ? 'Ganancia' : 'Perdida',
-            color: esGanancia.value ? '#10B981' : '#EF4444',
+            label: esGanancia.value ? 'Saldo' : 'Saldo',
+            color: esGanancia.value ? '#10B981' : '#3B82F6',
             fontSize: '13px',
             formatter: () =>
               (balance.value < 0 ? '-' : '') +
@@ -129,9 +129,9 @@ const porcentajeGastos = computed(() => {
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Ingresos</p>
           <p class="text-base font-bold text-emerald-600">${{ ingresos.toFixed(2) }}</p>
         </div>
-        <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Gastos</p>
-          <p class="text-base font-bold text-red-500">${{ gastos.toFixed(2) }}</p>
+          <p class="text-base font-bold text-blue-500">${{ gastos.toFixed(2) }}</p>
         </div>
       </div>
 
@@ -149,14 +149,14 @@ const porcentajeGastos = computed(() => {
         class="mt-4 rounded-xl px-4 py-3 text-center"
         :class="esGanancia
           ? 'bg-emerald-50 dark:bg-emerald-900/20'
-          : 'bg-red-50 dark:bg-red-900/20'"
+          : 'bg-blue-50 dark:bg-blue-900/20'"
       >
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-          {{ esGanancia ? 'Ganancia neta' : 'Perdida neta' }}
+          {{ esGanancia ? 'Saldo del mes' : 'Saldo del mes' }}
         </p>
         <p
           class="text-2xl font-extrabold"
-          :class="esGanancia ? 'text-emerald-600' : 'text-red-500'"
+          :class="esGanancia ? 'text-emerald-600' : 'text-blue-500'"
         >
           {{ balance < 0 ? '-' : '' }}${{ Math.abs(balance).toFixed(2) }}
         </p>
