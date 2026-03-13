@@ -182,16 +182,17 @@
         </div>
       </div>
 
-      <!-- botones -->
-      <div class="flex gap-2 p-4 border-t dark:border-gray-700">
-        <button class="btn-outline flex-1 flex items-center justify-center gap-2" @click="$emit('close')">
-          Cerrar
+    <!-- botones -->
+    <div class="flex gap-2 p-4 border-t dark:border-gray-700">
+        <button class="btn flex-1 flex items-center justify-center gap-2" @click="descargarPDF">
+            <i class="fa-solid fa-download"></i>
+            Descargar
         </button>
         <button class="btn flex-1 flex items-center justify-center gap-2" @click="imprimir">
-          <i class="fa-solid fa-print"></i>
-          Imprimir
+            <i class="fa-solid fa-print"></i>
+            Imprimir
         </button>
-      </div>
+    </div>
 
     </div>
   </div>
@@ -199,6 +200,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 const props = defineProps<{
   ticket: any
@@ -225,7 +228,8 @@ const baseGravable = computed(() => {
 onMounted(() => {
     // esperamos un tick para que el DOM este listo antes de imprimir
     setTimeout(() => {
-        imprimir()
+        //imprimir() // impresion queda fuera para descargarse automaticamente
+        descargarPDF()  
     }, 300)
 })
 
@@ -434,5 +438,36 @@ function generarHtmlTicket(): string {
   html += `<div class="pie">Gracias por su compra</div>`
 
   return html
+}
+
+async function descargarPDF() {
+    // tomamos el elemento que contiene el ticket visible en el modal
+    const elemento = document.getElementById('ticket-imprimible')
+    if (!elemento) return
+
+    // generamos un canvas a partir del html del ticket
+    const canvas = await html2canvas(elemento, {
+        scale: 2,           // mayor resolucion
+        useCORS: true,      // permite cargar imagenes externas como el logo
+        backgroundColor: '#ffffff'
+    })
+
+    const imgData   = canvas.toDataURL('image/png')
+    const ancho     = props.impresora_ancho ?? 80
+
+    // convertimos mm a puntos para jspdf (1mm = 2.8346 pt)
+    const anchoPt   = ancho * 2.8346
+    const altoPt    = (canvas.height * anchoPt) / canvas.width
+
+    const pdf = new jsPDF({
+        orientation : 'portrait',
+        unit        : 'pt',
+        format      : [anchoPt, altoPt]   // tamaño dinamico segun el contenido
+    })
+
+    pdf.addImage(imgData, 'PNG', 0, 0, anchoPt, altoPt)
+
+    const folio = props.ticket?.folio ?? ('venta-' + props.ticket?.id)
+    pdf.save(`ticket-${folio}.pdf`)
 }
 </script>
