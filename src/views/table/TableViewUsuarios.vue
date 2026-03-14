@@ -87,7 +87,7 @@ async function handleDelete(id: number) {
   await deleteUser(id)
   await loadUsers()
 
-  Swal.fire('Eliminado', 'Usuario eliminado', 'success')
+  await Swal.fire({title: 'Eliminado', text: 'Usuario eliminado', icon: 'success', confirmButtonColor: '#10B981', })
 }
 
 // ---------------- SEARCH & PAGINATION ----------------
