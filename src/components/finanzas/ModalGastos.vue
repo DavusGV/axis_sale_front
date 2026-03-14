@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue"
-import { IconX, IconDeviceFloppy } from "@tabler/icons-vue"
+import { IconX, IconDeviceFloppy, IconCalendar } from "@tabler/icons-vue"
 import { getType, getMethodPay, registrarGasto, editarGasto } from '@/api/finanzas'
 import Swal from 'sweetalert2'
 
@@ -18,7 +18,7 @@ const form = ref({
   concepto: '',
   descripcion: '',
   monto: '',
-  fecha: '',
+  fecha: new Date().toISOString().slice(0, 10),
   state: 1
 })
 
@@ -233,16 +233,24 @@ onMounted(() => {
                      focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-400"
             />
           </div>
-      <!-- fecha -->
+          <!-- fecha -->
           <div>
             <label class="text-xs text-gray-500 dark:text-gray-400">Fecha</label>
-            <input
-              type="date"
-              v-model="form.fecha"
-              class="w-full mt-1 px-3 py-2 text-sm border rounded-lg
-                     dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100
-                     focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-400"
-            />
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300 pointer-events-none">
+                <IconCalendar :size="16" />
+              </span>
+              <input
+                type="date"
+                v-model="form.fecha"
+                @click="($event.target as HTMLInputElement).showPicker()"
+                class="w-full mt-1 pl-9 pr-3 py-2 text-sm border rounded-lg
+                      dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100
+                      focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-400
+                      [&::-webkit-calendar-picker-indicator]:cursor-pointer
+                      [&::-webkit-calendar-picker-indicator]:dark:invert"
+              />
+            </div>
           </div>
         </div>
 

@@ -13,6 +13,7 @@ import { crearPlanPago } from '@/api/planes_pago'
 import Swal from 'sweetalert2'
 import ModalAbono from '@/components/creditos/ModalAbonoCredito.vue'
 import ModalTicket from '@/components/ventas/ModalTicket.vue'
+import ModalPrecioServicio from '@/components/ventas/ModalPrecioServicio.vue'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
@@ -62,6 +63,8 @@ const loading = ref(false)
 const showModalAbono = ref(false)
 const showModalTicket = ref(false)
 const ticketData = ref<any>(null)
+const showModalPrecioServicio = ref(false)
+const productoServicioTemp = ref<any>(null)
   
 //NUEVAS VARIABLES PARA SCANNER
 let codigoBuffer = ''
@@ -192,11 +195,23 @@ async function procesarCodigoEscaneado() {
 }
 
 function agregarAlCarrito(producto: any) {
+  // si es servicio, abrir modal para pedir precio
+  if (producto.es_servicio) {
+    productoServicioTemp.value = producto
+    showModalPrecioServicio.value = true
+    return
+  }
+
+  agregarItemAlCarrito(producto, producto.precio_venta)
+}
+
+// funcion que realmente agrega al carrito (usada por producto normal y servicio)
+function agregarItemAlCarrito(producto: any, precioVenta: number) {
   const idx = carrito.value.findIndex(item => item.producto_id === producto.id)
   const cantidadActual = idx !== -1 ? carrito.value[idx].cantidad : 0
 
-  // validamos el stock si hay productos disponibles
-  if (cantidadActual + 1 > producto.stock) {
+  // validamos stock solo si NO es servicio
+  if (!producto.es_servicio && cantidadActual + 1 > producto.stock) {
     Swal.fire({
       icon: 'warning',
       title: 'Stock insuficiente',
@@ -212,13 +227,21 @@ function agregarAlCarrito(producto: any) {
     carrito.value.push({
       producto_id: producto.id,
       nombre: producto.nombre,
-      precio: producto.precio_venta,
+      precio: precioVenta,
       precio_compra: producto.precio_compra,
       cantidad: 1,
-      stock: producto.stock, // opcional pero util en frontend
-      imagen: producto.imagen_url || defaultImg
+      stock: producto.stock,
+      imagen: producto.imagen_url || defaultImg,
+      es_servicio: producto.es_servicio ?? false
     })
   }
+}
+
+// cuando confirma el precio del servicio desde el modal
+function confirmarPrecioServicio(productoConPrecio: any) {
+  agregarItemAlCarrito(productoConPrecio, productoConPrecio.precio_venta)
+  showModalPrecioServicio.value = false
+  productoServicioTemp.value = null
 }
 
 const loadProducts = async () => {
@@ -234,7 +257,7 @@ function sumarCantidad(id: number) {
   const item = carrito.value.find(i => i.producto_id === id)
   if (!item) return
 
-  if (item.cantidad + 1 > item.stock) {
+  if (!item.es_servicio && item.cantidad + 1 > item.stock) {
     Swal.fire({
       icon: 'warning',
       title: 'Stock insuficiente',
@@ -290,6 +313,12 @@ function aplicarDescuentoProducto({ descuento_aplicado, tipo_descuento, descuent
 
   showModalDescuentoProducto.value = false
   productoDescuento.value = null
+}
+
+function cambiarPrecioServicio(producto_id: number, nuevoPrecio: number) {
+  const item = carrito.value.find(i => i.producto_id === producto_id)
+  if (!item) return
+  item.precio = nuevoPrecio
 }
 
 async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_final, es_credito, credito }: any) {
@@ -499,6 +528,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
         @restar="restarCantidad"
         @eliminar="eliminarDelCarrito"
         @descuento="abrirDescuentoProducto"
+        @cambiar-precio="cambiarPrecioServicio"
       />
       <ResumenVenta
         :total="total"
@@ -534,6 +564,14 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
       :impresora_ancho="configuracion?.impresora_ancho ?? 80"
       :impresora_alto="configuracion?.impresora_alto ?? 200"
       @close="showModalTicket = false"
+    />
+
+    <!-- Modal precio servicio -->
+    <ModalPrecioServicio
+      v-if="showModalPrecioServicio && productoServicioTemp"
+      :producto="productoServicioTemp"
+      @close="showModalPrecioServicio = false"
+      @confirmar="confirmarPrecioServicio"
     />
   </div>
 </template>

@@ -46,6 +46,22 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
+          <!-- Toggle servicio -->
+          <div class="flex items-center gap-3 md:col-span-2 pb-2 border-b dark:border-gray-700 mb-1">
+            <label class="block text-sm">Es servicio?</label>
+            <button
+              type="button"
+              @click="form.es_servicio = !form.es_servicio"
+              :class="form.es_servicio ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+              class="relative inline-flex items-center w-11 h-6 rounded-full transition-colors shrink-0"
+            >
+              <span
+                :class="form.es_servicio ? 'translate-x-5' : 'translate-x-0.5'"
+                class="inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform"
+              />
+            </button>
+          </div>
+
           <!-- CATEGORÍA -->
           <div>
             <label class="block text-sm mb-1">Categoría</label>
@@ -77,12 +93,18 @@
 
           <!-- PRECIO COMPRA -->
           <div>
+            <p v-if="form.es_servicio" class="text-xs text-amber-500 mt-1">
+              Al ser servicio, el precio de compra puede quedar en 0.
+            </p>
             <label class="block text-sm mb-1">Precio Compra</label>
             <input v-model.number="form.precio_compra" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required />
           </div>
 
           <!-- PRECIO VENTA -->
           <div>
+            <p v-if="form.es_servicio" class="text-xs text-amber-500 mt-1">
+              Al ser servicio, el precio de venta se define al momento de la venta.
+            </p>
             <label class="block text-sm mb-1">Precio Venta</label>
             <input v-model.number="form.precio_venta" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required />
           </div>
@@ -111,6 +133,9 @@
 
           <!-- STOCK -->
           <div>
+            <p v-if="form.es_servicio" class="text-xs text-amber-500 mt-1">
+              Al ser servicio, el stock queda en 0.
+            </p>
             <label class="block text-sm mb-1">Stock</label>
             <input v-model.number="form.stock" type="number" min="0" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required/>
           </div>
@@ -157,7 +182,8 @@ const form = ref<any>({
   iva: null,
   stock: 0,
   categoria_id: '',
-  imagen: null
+  imagen: null,
+  es_servicio: false
 })
 
 const previewImage = ref<string | null>(null)
@@ -191,7 +217,8 @@ function resetForm() {
     iva: null,
     stock: 0,
     categoria_id: '',
-    imagen: null
+    imagen: null,
+    es_servicio: false,
   }
   previewImage.value = null
 }

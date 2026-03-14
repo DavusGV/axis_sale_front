@@ -26,6 +26,7 @@ const columns = [
   { key: 'nombre', label: 'Nombre' },
   { key: 'codigo', label: 'Código' },
   //{ key: 'clave', label: 'Clave' },
+  { key: 'es_servicio', label: 'Tipo' },
   { key: 'descripcion', label: 'Descripción' },
   { key: 'precio_compra', label: 'Precio Compra' },
   { key: 'precio_venta', label: 'Precio Venta' },
