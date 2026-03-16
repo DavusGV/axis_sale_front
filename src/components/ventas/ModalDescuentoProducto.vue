@@ -22,7 +22,7 @@
           <span v-else>(Monto por unidad)</span>
         </p>
 
-        <div class="space-y-1">
+        <div class="space-y-1 max-h-32 overflow-y-auto">
           <div
             v-for="n in props.item.cantidad"
             :key="n"
@@ -33,13 +33,13 @@
               ${{ Number(props.item.precio).toFixed(2) }} x {{ descuento }}% = -${{ (Number(props.item.precio) * descuento / 100).toFixed(2) }}
             </span>
             <span v-else>
-              -${{ descuento.toFixed(2) }}
+              -${{ Number(descuento ?? 0).toFixed(2) }}
             </span>
           </div>
         </div>
 
         <div class="flex justify-between text-sm font-bold text-green-700 dark:text-green-400 mt-2 pt-2 border-t border-green-200 dark:border-green-700">
-          <span>Total descuento ({{ props.item.cantidad }} uds):</span>
+          <span>Total de descuento:</span>
           <span>-${{ descuentoCalculado.toFixed(2) }}</span>
         </div>
       </div>
@@ -101,7 +101,7 @@ import Swal from 'sweetalert2'
 const props = defineProps(['item'])
 const emits = defineEmits(['close', 'confirmar'])
 
-const descuento = ref(props.item.descuento ?? 0)
+const descuento = ref(props.item.descuento ?? null)
 const tipoDescuento = ref(props.item.tipo_descuento ?? 'porcentaje')
 
 // subtotal del producto (precio * cantidad)
@@ -120,6 +120,7 @@ const totalConDescuento = computed(() => {
 })
 
 watch([descuento, tipoDescuento], () => {
+  if (descuento.value === null || descuento.value === '' || isNaN(descuento.value)) return
   if (tipoDescuento.value === 'porcentaje') {
     descuento.value = Math.round(descuento.value)
     if (descuento.value > 100) descuento.value = 100
