@@ -178,7 +178,9 @@
 
           <!-- pie del ticket -->
           <p class="text-center text-xs text-gray-500 mt-2">Gracias por su compra</p>
-
+          <p v-if="ticket.es_credito" class="text-center text-xs text-red-500 mt-1">
+            Los precios estan sujetos a cambios sin previo aviso
+          </p>
         </div>
       </div>
 
@@ -436,6 +438,9 @@ function generarHtmlTicket(): string {
 
   html += `<hr />`
   html += `<div class="pie">Gracias por su compra</div>`
+  if (t.es_credito) {
+    html += `<div class="pie" style="color:#991b1b;margin-top:1mm;">Los precios estan sujetos a cambios sin previo aviso</div>`
+  }
 
   return html
 }
@@ -445,12 +450,20 @@ async function descargarPDF() {
     const elemento = document.getElementById('ticket-imprimible')
     if (!elemento) return
 
-    // generamos un canvas a partir del html del ticket
+    // guardamos el ancho original del elemento
+    const anchoPrincipal = elemento.style.width;
+    // forzamos un ancho fijo para la descarga no se recorte
+    elemento.style.width = "370px"
+
+    // generamos un canvas a partir del html del ticket, ahora de manera fija
     const canvas = await html2canvas(elemento, {
         scale: 2,           // mayor resolucion
         useCORS: true,      // permite cargar imagenes externas como el logo
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: 420
     })
+
+    elemento.style.width = anchoPrincipal
 
     const imgData   = canvas.toDataURL('image/png')
     const ancho     = props.impresora_ancho ?? 80

@@ -14,11 +14,34 @@
         </span>
       </div>
 
-      <div v-if="descuentoCalculado > 0" class="text-sm text-green-600 mb-3">
-        Descuento aplicado: -${{ descuentoCalculado.toFixed(2) }}
-        <span class="text-gray-500">
-          ({{ tipoDescuento === 'porcentaje' ? descuento + '%' : '$' + descuento.toFixed(2) }})
-        </span>
+      <!-- desglose del descuento aplicado -->
+      <div v-if="descuentoCalculado > 0" class="mb-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+        <p class="text-sm font-semibold text-green-700 dark:text-green-400 mb-2">
+          Desglose del descuento
+          <span v-if="tipoDescuento === 'porcentaje'">(Porcentaje)</span>
+          <span v-else>(Monto por unidad)</span>
+        </p>
+
+        <div class="space-y-1 max-h-32 overflow-y-auto">
+          <div
+            v-for="n in props.item.cantidad"
+            :key="n"
+            class="flex justify-between text-xs text-gray-600 dark:text-gray-400"
+          >
+            <span>Unidad {{ n }}:</span>
+            <span v-if="tipoDescuento === 'porcentaje'">
+              ${{ Number(props.item.precio).toFixed(2) }} x {{ descuento }}% = -${{ (Number(props.item.precio) * descuento / 100).toFixed(2) }}
+            </span>
+            <span v-else>
+              -${{ Number(descuento ?? 0).toFixed(2) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="flex justify-between text-sm font-bold text-green-700 dark:text-green-400 mt-2 pt-2 border-t border-green-200 dark:border-green-700">
+          <span>Total de descuento:</span>
+          <span>-${{ descuentoCalculado.toFixed(2) }}</span>
+        </div>
       </div>
 
       <div class="mb-4">
@@ -78,18 +101,18 @@ import Swal from 'sweetalert2'
 const props = defineProps(['item'])
 const emits = defineEmits(['close', 'confirmar'])
 
-const descuento = ref(props.item.descuento ?? 0)
+const descuento = ref(props.item.descuento ?? null)
 const tipoDescuento = ref(props.item.tipo_descuento ?? 'porcentaje')
 
 // subtotal del producto (precio * cantidad)
-const subtotalProducto = computed(() => props.item.precio * props.item.cantidad)
+const subtotalProducto = computed(() => Number(props.item.precio) * props.item.cantidad)
 
 const descuentoCalculado = computed(() => {
   if (!descuento.value) return 0
   if (tipoDescuento.value === 'porcentaje') {
     return subtotalProducto.value * (descuento.value / 100)
   }
-  return descuento.value
+  return descuento.value * props.item.cantidad
 })
 
 const totalConDescuento = computed(() => {
@@ -97,6 +120,7 @@ const totalConDescuento = computed(() => {
 })
 
 watch([descuento, tipoDescuento], () => {
+  if (descuento.value === null || descuento.value === '' || isNaN(descuento.value)) return
   if (tipoDescuento.value === 'porcentaje') {
     descuento.value = Math.round(descuento.value)
     if (descuento.value > 100) descuento.value = 100
