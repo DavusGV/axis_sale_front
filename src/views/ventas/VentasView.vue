@@ -34,7 +34,7 @@ const total = computed(() =>
     if (item.tipo_descuento === 'porcentaje') {
       descAplicado = subtotal * ((item.descuento ?? 0) / 100)
     } else if (item.tipo_descuento === 'monto') {
-      descAplicado = item.descuento ?? 0
+      descAplicado = (item.descuento ?? 0) * item.cantidad
     }
 
     return acc + (subtotal - descAplicado)
@@ -50,7 +50,7 @@ const carritoConDescuento = computed(() =>
     if (item.tipo_descuento === 'porcentaje') {
       desc_aplicado = subtotal * ((item.descuento ?? 0) / 100)
     } else if (item.tipo_descuento === 'monto') {
-      desc_aplicado = item.descuento ?? 0
+      desc_aplicado = (item.descuento ?? 0) * item.cantidad
     }
 
     return { ...item, descuento_aplicado: desc_aplicado }
@@ -333,7 +333,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     if (item.tipo_descuento === 'porcentaje') {
       desc_aplicado = subtotalBruto * ((item.descuento ?? 0) / 100)
     } else if (item.tipo_descuento === 'monto') {
-      desc_aplicado = item.descuento ?? 0
+      desc_aplicado = (item.descuento ?? 0) * item.cantidad
     }
 
     return {
@@ -553,6 +553,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     <!-- Modal descuento producto individual -->
     <ModalDescuentoProducto
       v-if="showModalDescuentoProducto && productoDescuento"
+      :key="productoDescuento.producto_id"
       :item="productoDescuento"
       @close="showModalDescuentoProducto = false"
       @confirmar="aplicarDescuentoProducto"
