@@ -26,11 +26,11 @@ const columns = [
   { key: 'nombre', label: 'Nombre' },
   { key: 'codigo', label: 'Código' },
   //{ key: 'clave', label: 'Clave' },
-  { key: 'es_servicio', label: 'Tipo' },
-  { key: 'descripcion', label: 'Descripción' },
+  { key: 'servicio', label: 'Tipo' },
+  //{ key: 'descripcion', label: 'Descripción' },
   { key: 'precio_compra', label: 'Precio Compra' },
   { key: 'precio_venta', label: 'Precio Venta' },
-  { key: 'iva', label: 'IVA (%)' },
+  //{ key: 'iva', label: 'IVA (%)' },
   { key: 'stock', label: 'Stock' },
   { key: 'categoria', label: 'Categoría' },
 ]
@@ -116,6 +116,7 @@ function openProductModal() {
 
 function openEditModal(producto: any) {
   editingProduct.value = { ...producto }
+  //console.log(editingProduct.value);
   showProductModal.value = true
 }
 

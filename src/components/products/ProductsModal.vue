@@ -58,7 +58,8 @@
               <span
                 :class="form.es_servicio ? 'translate-x-5' : 'translate-x-0.5'"
                 class="inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform"
-              />
+              >
+              </span>
             </button>
           </div>
 
@@ -245,6 +246,20 @@ function processImage(file: File) {
 
 async function submit() {
   try {
+
+    //validamo si no es servicio debe validar que en stock sea mayor a 0
+    if(!form.value.es_servicio && form.value.stock == 0){
+        //alertamos que el producto no puede ser menor a 0;
+        Swal.fire({
+          title: 'Ups!',
+          text: '¡El stock del producto debe ser mayor a 0!',
+          icon: 'info',
+          color: '#1f2937',
+          confirmButtonColor: '#3b82f6'
+        })
+        return;
+    } 
+
     Swal.fire({ title: 'Guardando...', didOpen: () => Swal.showLoading() })
 
     if (props.product && props.product.id) {
