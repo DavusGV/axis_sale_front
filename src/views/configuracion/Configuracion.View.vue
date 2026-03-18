@@ -13,6 +13,50 @@
             Opciones generales
           </h2>
 
+          <!-- logo del establecimiento -->
+          <div class="flex items-center gap-4 py-3 border-b dark:border-gray-700">
+            <div class="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <img
+                v-if="logoUrl"
+                :src="logoUrl"
+                class="w-full h-full object-contain"
+                alt="Logo"
+              />
+              <i v-else class="fa-solid fa-image text-gray-400 text-xl"></i>
+            </div>
+            <div class="flex-1">
+              <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Logo del negocio</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                Se muestra en el encabezado del ticket. JPG, PNG o WebP, max 2MB.
+              </p>
+              <div class="flex gap-2">
+                <label
+                  class="px-3 py-1 text-xs font-medium rounded-lg bg-gray-100 dark:bg-gray-700 
+                        text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 
+                        cursor-pointer transition"
+                >
+                  <i class="fa-solid fa-upload mr-1"></i>
+                  Seleccionar
+                  <input
+                    type="file"
+                    accept="image/jpg,image/jpeg,image/png,image/webp"
+                    class="hidden"
+                    @change="onLogoSeleccionado"
+                  />
+                </label>
+                <button
+                  v-if="logoFile"
+                  class="px-3 py-1 text-xs font-medium rounded-lg bg-green-500 text-white hover:bg-green-600 transition"
+                  :disabled="subiendoLogo"
+                  @click="guardarLogo"
+                >
+                  <i class="fa-solid fa-check mr-1"></i>
+                  {{ subiendoLogo ? 'Subiendo...' : 'Guardar logo' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- toggle: imprimir ticket al finalizar venta -->
           <div class="flex items-center justify-between py-3 border-b dark:border-gray-700">
             <div>
@@ -67,6 +111,74 @@
                 />
               </div>
             </div>
+          </div>
+
+          <!-- formato de hora del ticket -->
+          <div class="flex items-center justify-between py-3 border-b dark:border-gray-700">
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Formato de hora</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Define como se muestra la hora en el ticket.
+              </p>
+            </div>
+            <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
+              <button
+                @click="form.formato_hora = '12h'"
+                class="px-3 py-1 text-xs font-medium rounded-md transition"
+                :class="form.formato_hora === '12h'
+                  ? 'bg-white dark:bg-gray-600 shadow text-gray-800 dark:text-gray-100'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'"
+              >
+                12 HRS
+              </button>
+              <button
+                @click="form.formato_hora = '24h'"
+                class="px-3 py-1 text-xs font-medium rounded-md transition"
+                :class="form.formato_hora === '24h'
+                  ? 'bg-white dark:bg-gray-600 shadow text-gray-800 dark:text-gray-100'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'"
+              >
+                24 HRS
+              </button>
+            </div>
+          </div>
+
+          <!-- formato de fecha del ticket -->
+          <div class="flex items-center justify-between py-3 border-b dark:border-gray-700">
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Formato de fecha</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Define como se muestra la fecha en el ticket.
+              </p>
+            </div>
+            <select
+              v-model="form.formato_fecha"
+              class="text-sm px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600
+                    bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500"
+            >
+              <option value="d/m/Y">DD/MM/AAAA</option>
+              <option value="m/d/Y">MM/DD/AAAA</option>
+              <option value="Y-m-d">AAAA-MM-DD</option>
+            </select>
+          </div>
+
+          <!-- numero de cuenta para transferencias -->
+          <div class="flex flex-col gap-1 py-3">
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Numero de cuenta</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Se mostrara en el ticket para pagos por transferencia o deposito. Dejalo vacio si no aplica.
+              </p>
+            </div>
+            <input
+              v-model="form.num_cuenta"
+              type="text"
+              maxlength="50"
+              placeholder="Ej: 1234 5678 9012 3456"
+              class="mt-1 w-full text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+                    bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                    placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            />
           </div>
           <!-- Agregan mas toggles aqui siguiendo el mismo patron -->
 
@@ -173,12 +285,25 @@
 
             <!-- cabecera del ticket -->
             <div class="text-center mb-3">
-              <div class="w-12 h-12 bg-gray-200 rounded mx-auto mb-2 flex items-center justify-center">
-                <i class="fa-solid fa-image text-gray-400 text-lg"></i>
+              <div class="w-12 h-12 rounded mx-auto mb-2 flex items-center justify-center overflow-hidden"
+                  :class="logoUrl ? '' : 'bg-gray-200'">
+                <img v-if="logoUrl" :src="logoUrl" class="w-full h-full object-contain" alt="Logo" />
+                <i v-else class="fa-solid fa-image text-gray-400 text-lg"></i>
               </div>
-              <p class="font-bold text-sm uppercase">Mi Negocio</p>
+              <p class="font-bold text-sm uppercase">{{ nombreEstablecimiento }}</p>
               <p class="text-gray-400 text-xs">Folio: #VTA-GH26001</p>
-              <p class="text-gray-400 text-xs">12/03/2026 10:30</p>
+              <p class="text-gray-400 text-xs">
+                {{ form.formato_fecha === 'd/m/Y' ? '12/03/2026' : form.formato_fecha === 'm/d/Y' ? '03/12/2026' : '2026-03-12' }}
+                {{ form.formato_hora === '12h' ? '10:30 AM' : '10:30' }}
+              </p>
+              <!-- num cuenta en el preview si existe -->
+              <template v-if="form.num_cuenta">
+                <hr class="border-dashed border-gray-300 my-2" />
+                <div class="flex justify-between text-gray-400">
+                  <span>NUM. CUENTA:</span>
+                  <span class="text-right">{{ form.num_cuenta }}</span>
+                </div>
+              </template>
             </div>
 
             <hr class="border-dashed border-gray-300 my-2" />
@@ -287,7 +412,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
-import { fetchConfiguracion, guardarConfiguracion } from '@/api/configuracion'
+import { fetchConfiguracion, guardarConfiguracion, subirLogo } from '@/api/configuracion'
 import Swal from 'sweetalert2'
 
 const loading = ref(false)
@@ -297,18 +422,56 @@ const form = ref({
     imprimir_ticket_venta: true,
     impresora_ancho: 80,
     impresora_alto: 200,
+    formato_hora: '12h' as '12h' | '24h',
+    formato_fecha: 'd/m/Y',
+    num_cuenta: '' as string,
 })
+
+const nombreEstablecimiento = ref<string>('Mi Negocio')
+const logoUrl = ref<string | null>(null)
+const logoFile = ref<File | null>(null)
+const subiendoLogo = ref(false)
 
 onMounted(async () => {
     try {
-        const config = await fetchConfiguracion()
-        form.value.modo_iva              = config.modo_iva
-        form.value.imprimir_ticket_venta = config.imprimir_ticket_venta
-        form.value.impresora_ancho = config.impresora_ancho
-        form.value.impresora_alto  = config.impresora_alto
+        const data = await fetchConfiguracion()
+        const config = data.configuracion
+        logoUrl.value = data.logo_url
+        form.value.modo_iva = config.modo_iva
+        nombreEstablecimiento.value = data.nombre_establecimiento ?? 'Mi Negocio'
     } catch {
     }
 })
+
+function onLogoSeleccionado(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (!input.files?.length) return
+  logoFile.value = input.files[0]
+  // preview local inmediato
+  logoUrl.value = URL.createObjectURL(input.files[0])
+}
+
+async function guardarLogo() {
+  if (!logoFile.value) return
+  subiendoLogo.value = true
+  try {
+    const res = await subirLogo(logoFile.value)
+    logoUrl.value = res.logo_url
+    logoFile.value = null
+    Swal.fire({
+      icon: 'success',
+      title: 'Logo actualizado',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000,
+    })
+  } catch {
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo subir el logo.' })
+  } finally {
+    subiendoLogo.value = false
+  }
+}
 
 async function guardar() {
     loading.value = true
