@@ -19,6 +19,7 @@ interface PlanPago {
   interes_aplicado: number
   monto_cuota: number
   num_plazos: number
+  intervalo_dias: number | null
   tipo_plazo: string
   saldo_pendiente: number
   fecha_inicio: string
@@ -36,15 +37,21 @@ const loading = ref(false)
 const filtroEstado = ref('activo')
 const planSeleccionado = ref<PlanPago | null>(null)
 
-function etiquetaPlazo(numPlazos: number, tipoPlazo: string): string {
-  if (tipoPlazo === 'dias') {
-    return `Cada ${numPlazos} dias`
-  } else if (tipoPlazo === 'semanal') {
-    return `${numPlazos} pago${numPlazos > 1 ? 's' : ''} semanal${numPlazos > 1 ? 'es' : ''}`
-  } else if (tipoPlazo === 'mensual') {
-    return `${numPlazos} pago${numPlazos > 1 ? 's' : ''} mensual${numPlazos > 1 ? 'es' : ''}`
+function etiquetaPlazo(plan: PlanPago): string {
+  const n = plan.num_plazos
+  if (plan.tipo_plazo === 'dias') {
+    if (plan.intervalo_dias) {
+      // plan nuevo: tiene intervalo y num_plazos separados
+      return `${n} pago${n > 1 ? 's' : ''} (cada ${plan.intervalo_dias} dias)`
+    }
+    // plan antiguo: no tenia intervalo_dias, num_plazos era el intervalo
+    return `Cada ${n} dias (plazos sin limite)`
+  } else if (plan.tipo_plazo === 'semanal') {
+    return `${n} pago${n > 1 ? 's' : ''} semanal${n > 1 ? 'es' : ''}`
+  } else if (plan.tipo_plazo === 'mensual') {
+    return `${n} pago${n > 1 ? 's' : ''} mensual${n > 1 ? 'es' : ''}`
   }
-  return `${numPlazos} ${tipoPlazo}`
+  return `${n} ${plan.tipo_plazo}`
 }
 
 // buscador de cliente
@@ -246,7 +253,7 @@ function formatFecha(fecha: string) {
               {{ formatFecha(plan.fecha_proximo_pago) }}
             </td>
             <td class="px-4 py-3 text-gray-500 dark:text-gray-400 capitalize">
-              {{ etiquetaPlazo(plan.num_plazos, plan.tipo_plazo) }}
+              {{ etiquetaPlazo(plan) }}
             </td>
             <td class="px-4 py-3 text-center">
               <span :class="['px-2 py-1 rounded-full text-xs font-medium capitalize', etiquetaEstado(plan.estado)]">
