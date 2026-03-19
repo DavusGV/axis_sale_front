@@ -115,6 +115,7 @@ import GastosView from "@/views/finanzas/GastosView.vue";
 import BalanceView from '@/views/finanzas/BalanceView.vue';
 import ReporteCreditoView from '@/views/reportes/ReporteCreditoView.vue';
 import ConfiguracionView from '@/views/configuracion/Configuracion.View.vue';
+import ContizacionView from '@/views/ventas/ContizacionView.vue';
 
 
 const router = createRouter({
@@ -791,6 +792,12 @@ const router = createRouter({
       path: '/ventas/ventas',
       name: 'ventas2',
       component: VentasView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/cotizacion',
+      name: 'cotizacion',
+      component: ContizacionView,
       meta: { requiresAuth: true } 
     },
     {

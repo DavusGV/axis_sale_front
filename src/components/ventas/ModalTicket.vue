@@ -6,7 +6,7 @@
       <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
         <h2 class="font-bold text-lg flex items-center gap-2">
           <i class="fa-solid fa-receipt"></i>
-          Ticket de venta
+          {{ esCotizacion ? 'Ticket de cotización' : 'Ticket de venta' }}
         </h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
           <i class="fa-solid fa-xmark text-xl"></i>
@@ -43,9 +43,28 @@
             <span>FECHA:</span>
             <span>{{ ticket.fecha }}</span>
           </div>
-          <div class="flex justify-between text-xs text-gray-600 mb-1">
+          <!-- metodo de pago solo en ventas -->
+          <div v-if="!esCotizacion && ticket.metodo_pago" class="flex justify-between text-xs text-gray-600 mb-1">
             <span>METODO DE PAGO:</span>
             <span class="uppercase">{{ ticket.metodo_pago }}</span>
+          </div>
+
+          <!-- cliente en cotizaciones -->
+          <div v-if="esCotizacion && ticket.cliente" class="flex justify-between text-xs text-gray-600 mb-1">
+            <span>CLIENTE:</span>
+            <span class="uppercase">{{ ticket.cliente.nombre }} {{ ticket.cliente.apellido ?? '' }}</span>
+          </div>
+
+          <!-- status de la cotizacion -->
+          <div v-if="esCotizacion && ticket.status" class="flex justify-between text-xs text-gray-600 mb-1">
+            <span>STATUS:</span>
+            <span class="uppercase font-semibold">{{ ticket.status }}</span>
+          </div>
+
+          <!-- vigencia de la cotizacion -->
+          <div v-if="esCotizacion && ticket.expires_at" class="flex justify-between text-xs text-gray-600 mb-1">
+            <span>VIGENCIA:</span>
+            <span>{{ ticket.expires_at }}</span>
           </div>
 
           <hr class="border-dashed border-gray-400 my-2" />
@@ -128,8 +147,8 @@
             <span>${{ Number(ticket.total).toFixed(2) }}</span>
           </div>
 
-          <!-- datos de pago contado -->
-          <template v-if="!ticket.es_credito">
+          <!-- datos de pago contado (solo ventas) -->
+          <template v-if="!esCotizacion && !ticket.es_credito">
             <div class="flex justify-between text-xs text-gray-600 mt-1">
               <span>PAGO RECIBIDO:</span>
               <span>${{ Number(ticket.pago).toFixed(2) }}</span>
@@ -140,8 +159,8 @@
             </div>
           </template>
 
-          <!-- datos de credito -->
-          <template v-if="ticket.es_credito && ticket.plan_pago">
+          <!-- datos de credito (solo ventas) -->
+          <template v-if="!esCotizacion && ticket.es_credito && ticket.plan_pago">
             <hr class="border-dashed border-gray-400 my-2" />
             <p class="font-bold text-xs uppercase mb-1">PLAN DE CREDITO</p>
             <div class="flex justify-between text-xs text-gray-600 mb-1">
@@ -192,10 +211,17 @@
           </template>
 
           <hr class="border-dashed border-gray-400 my-2" />
-
+          <!-- notas de la cotizacion -->
+          <template v-if="esCotizacion && ticket.notas">
+            <hr class="border-dashed border-gray-400 my-2" />
+            <p class="font-bold text-xs uppercase mb-1">NOTAS</p>
+            <p class="text-xs text-gray-600">{{ ticket.notas }}</p>
+          </template>
           <!-- pie del ticket -->
-          <p class="text-center text-xs text-gray-500 mt-2">GRACIAS POR SU COMPRA</p>
-          <p v-if="ticket.es_credito" class="text-center text-xs text-red-500 mt-1">
+          <p class="text-center text-xs text-gray-500 mt-2">
+            {{ esCotizacion ? 'COTIZACION SUJETA A DISPONIBILIDAD' : 'GRACIAS POR SU COMPRA' }}
+          </p>
+          <p v-if="!esCotizacion && ticket.es_credito" class="text-center text-xs text-red-500 mt-1">
             LOS PRECIOS ESTAN SUJETOS A CAMBIOS SIN PREVIO AVISO
           </p>
         </div>
@@ -224,9 +250,17 @@ import jsPDF from 'jspdf'
 
 const props = defineProps<{
   ticket: any
+  tipo?: 'venta' | 'cotizacion'
   impresora_ancho?: number
   impresora_alto?: number
 }>()
+
+// si no se pasa tipo, se determina por los datos del ticket
+const esCotizacion = computed(() => {
+  if (props.tipo) return props.tipo === 'cotizacion'
+  // si no tiene metodo_pago ni pago, asumimos cotizacion
+  return props.ticket?.metodo_pago === undefined && props.ticket?.pago === undefined
+})
 
 defineEmits(['close'])
 
@@ -261,7 +295,7 @@ function imprimir() {
   ventana.document.write(`
     <html>
       <head>
-        <title>Ticket ${props.ticket.folio ?? '#' + props.ticket.id}</title>
+        <title>${esCotizacion.value ? 'Cotizacion' : 'Ticket'} ${props.ticket.folio ?? '#' + props.ticket.id}</title>
         <style>
           /* reset general */
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -373,6 +407,7 @@ function imprimir() {
 // genera el html limpio del ticket optimizado para impresora termica
 function generarHtmlTicket(): string {
   const t = props.ticket
+  const esCot = esCotizacion.value
 
   // cabecera del negocio
   let html = `<div class="ticket-header">`
@@ -384,10 +419,32 @@ function generarHtmlTicket(): string {
 
   html += `<hr />`
 
-  // datos de la venta
+  // datos generales
   html += `<div class="fila"><span>FOLIO:</span><span>${t.folio ?? '#' + t.id}</span></div>`
   html += `<div class="fila"><span>FECHA:</span><span>${t.fecha}</span></div>`
-  html += `<div class="fila"><span>METODO DE PAGO:</span><span>${(t.metodo_pago ?? '').toUpperCase()}</span></div>`
+
+  // metodo de pago solo en ventas
+  if (!esCot && t.metodo_pago) {
+    html += `<div class="fila"><span>METODO DE PAGO:</span><span>${(t.metodo_pago ?? '').toUpperCase()}</span></div>`
+  }
+
+  // cliente en cotizaciones
+  if (esCot && t.cliente) {
+    const nombreCliente = `${t.cliente.nombre ?? ''} ${t.cliente.apellido ?? ''}`.trim().toUpperCase()
+    if (nombreCliente) {
+      html += `<div class="fila"><span>CLIENTE:</span><span>${nombreCliente}</span></div>`
+    }
+  }
+
+  // status de la cotizacion
+  if (esCot && t.status) {
+    html += `<div class="fila"><span>STATUS:</span><span>${t.status.toUpperCase()}</span></div>`
+  }
+
+  // vigencia de la cotizacion
+  if (esCot && t.expires_at) {
+    html += `<div class="fila"><span>VIGENCIA:</span><span>${t.expires_at}</span></div>`
+  }
 
   html += `<hr />`
 
@@ -443,14 +500,14 @@ function generarHtmlTicket(): string {
   html += `<div class="fila bold"><span>TOTAL:</span><span>$${Number(t.total).toFixed(2)}</span></div>`
   html += `</div>`
 
-  // pago y cambio si es contado
-  if (!t.es_credito) {
+  // pago y cambio solo en ventas de contado
+  if (!esCot && !t.es_credito) {
     html += `<div class="fila"><span>PAGO RECIBIDO:</span><span>$${Number(t.pago).toFixed(2)}</span></div>`
     html += `<div class="fila"><span>CAMBIO:</span><span>$${Number(t.cambio).toFixed(2)}</span></div>`
   }
 
-  // plan de credito si aplica
-  if (t.es_credito && t.plan_pago) {
+  // plan de credito solo en ventas
+  if (!esCot && t.es_credito && t.plan_pago) {
     const p = t.plan_pago
     html += `<hr />`
     html += `<div class="seccion-titulo">PLAN DE CREDITO</div>`
@@ -463,7 +520,6 @@ function generarHtmlTicket(): string {
 
     html += `<div class="fila rojo"><span>SALDO PENDIENTE:</span><span>$${Number(p.saldo_pendiente).toFixed(2)}</span></div>`
 
-    // plazos: formato diferente para dias vs semanal/mensual
     let plazosTexto = ''
     if (p.tipo_plazo === 'dias') {
       plazosTexto = `${p.num_plazos} PAGOS (CADA ${p.intervalo_dias} DIAS)`
@@ -476,6 +532,13 @@ function generarHtmlTicket(): string {
     html += `<div class="fila"><span>PROXIMO PAGO:</span><span>${p.fecha_proximo_pago}</span></div>`
   }
 
+  // notas de la cotizacion
+  if (esCot && t.notas) {
+    html += `<hr />`
+    html += `<div class="seccion-titulo">NOTAS</div>`
+    html += `<div class="fila"><span>${t.notas}</span></div>`
+  }
+
   // numero de cuenta si existe en la configuracion
   if (t.num_cuenta) {
     html += `<hr />`
@@ -483,9 +546,15 @@ function generarHtmlTicket(): string {
   }
 
   html += `<hr />`
-  html += `<div class="pie">GRACIAS POR SU COMPRA</div>`
-  if (t.es_credito) {
-    html += `<div class="pie" style="color:#991b1b;margin-top:1mm;">LOS PRECIOS ESTAN SUJETOS A CAMBIOS SIN PREVIO AVISO</div>`
+
+  // pie del ticket
+  if (esCot) {
+    html += `<div class="pie">COTIZACION SUJETA A DISPONIBILIDAD</div>`
+  } else {
+    html += `<div class="pie">GRACIAS POR SU COMPRA</div>`
+    if (t.es_credito) {
+      html += `<div class="pie" style="color:#991b1b;margin-top:1mm;">LOS PRECIOS ESTAN SUJETOS A CAMBIOS SIN PREVIO AVISO</div>`
+    }
   }
 
   return html
@@ -526,7 +595,8 @@ async function descargarPDF() {
 
     pdf.addImage(imgData, 'PNG', 0, 0, anchoPt, altoPt)
 
-    const folio = props.ticket?.folio ?? ('venta-' + props.ticket?.id)
-    pdf.save(`ticket-${folio}.pdf`)
+    const folio = props.ticket?.folio ?? (esCotizacion.value ? 'cotizacion-' : 'venta-') + props.ticket?.id
+    const prefijo = esCotizacion.value ? 'cotizacion' : 'ticket'
+    pdf.save(`${prefijo}-${folio}.pdf`)
 }
 </script>

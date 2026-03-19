@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Pagination from '../shared/Pagination.vue'
 import TableActions from '@/components/shared/TableActions.vue'
+import { useSlots } from 'vue'
 
 interface Column {
   key: string
@@ -13,6 +14,8 @@ interface Item {
   [key: string]: any
 }
 
+const slots = useSlots()
+
 const props = defineProps<{
   items: Item[]
   columns: Column[]
@@ -24,6 +27,7 @@ const props = defineProps<{
   paginate: (page: number) => void
   nextPage: () => void
   prevPage: () => void
+  hideActions?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -52,66 +56,74 @@ function getValue(obj: any, path: string) {
 </script>
 
 <template>
-  <div class="col-span-12 lg:col-span-6 box">
+  <div class="col-span-12 lg:col-span-6 box overflow-visible">
    
-    <div class="w-full overflow-x-auto">
-      <table class="w-full whitespace-nowrap">
+    <div class="w-full overflow-x-auto overflow-visible">
+      <table class="w-full whitespace-nowrap overflow-visible">
         <thead>
             <tr class="bg-primary/5 dark:bg-bg3">
               <th v-for="col in columns" :key="col.key" class="py-3 font-semibold px-4 text-start text-sm">
                 {{ col.label }}
               </th>
 
-              <th class="py-3 font-semibold px-4 text-center text-sm">Acciones</th>
+              <th v-if="!hideActions" class="py-3 font-semibold px-4 text-center text-sm">Acciones</th>
             </tr>
         </thead>
 
-<tbody>
-  <tr 
-    v-for="(item, index) in items" 
-    :key="item.id" 
-    class="even:bg-primary/5 dark:even:bg-bg3"
-  >
+        <tbody>
+          <tr 
+            v-for="(item, index) in items" 
+            :key="item.id" 
+            class="even:bg-primary/5 dark:even:bg-bg3"
+          >
 
-    <!-- Columnas dinámicas -->
-    <td
-      v-for="col in columns"
-      :key="col.key"
-      class="px-4 py-2 text-xs"
-    >
-      
-      <!-- Render especial para estado -->
-      <template v-if="col.key === 'state'">
-      <span
-  :class="item.state === 1 || item.state === 'activo'
-    ? 'bg-secondary4/5 text-secondary4' 
-    : 'bg-secondary2/5 text-secondary2'"
-  class="inline-block text-xs px-3 py-1 text-center rounded-full border"
->
-  {{ item.state === 1 || item.state === 'activo' ? 'Activo' : 'Inactivo' }}
-</span>
-      </template>
+            <!-- Columnas dinámicas -->
+            <td
+              v-for="col in columns"
+              :key="col.key"
+              class="px-4 py-2 text-xs"
+            >
+              
+              <!-- Render especial para estado -->
+              <template v-if="col.key === 'state'">
+              <span
+          :class="item.state === 1 || item.state === 'activo'
+            ? 'bg-secondary4/5 text-secondary4' 
+            : 'bg-secondary2/5 text-secondary2'"
+          class="inline-block text-xs px-3 py-1 text-center rounded-full border"
+        >
+          {{ item.state === 1 || item.state === 'activo' ? 'Activo' : 'Inactivo' }}
+        </span>
+              </template>
 
-      <!-- Render normal -->
-      <template v-else>
-        {{ getValue(item, col.key) ?? '--' }}
-      </template>
+              <!-- Render normal -->
+              <template v-else>
+                {{ getValue(item, col.key) ?? '--' }}
+              </template>
 
-    </td>
+            </td>
 
-    <!-- Acciones -->
-    <td class="py-3">
-      <div class="flex justify-center items-center">
-        <TableActions
-          :from-bottom="index >= items.length - 2"
-          :on-edit="() => emitEdit(item)"
-          :on-delete="() => emitDelete(Number(item.id))"
-        />
-      </div>
-    </td>
+            <!-- Acciones -->
+            <td v-if="!hideActions" class="py-3">
+              <div class="flex justify-center items-center">
+                <!-- slot personalizado de acciones si existe -->
+                <template v-if="slots.actions">
+                  <slot name="actions" :item="item" :index="index" />
+                </template>
 
-  </tr>
-</tbody>
+                <!-- acciones por defecto con TableActions -->
+                <template v-else>
+                  <TableActions
+                    :from-bottom="index >= items.length - 2"
+                    :on-edit="() => emitEdit(item)"
+                    :on-delete="() => emitDelete(Number(item.id))"
+                  />
+                </template>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
       </table>
 
       <Pagination

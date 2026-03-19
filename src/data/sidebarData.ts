@@ -56,6 +56,7 @@ export const sidebarData = [
                     { title: "Ventas", url: "/ventas/ventas" },
                     { title: "Clientes", url: "/clientes" },
                     { title: "Creditos", url: "/credito" },
+                    { title: "Cotizacion", url: '/cotizacion', },
                     { title: "Configuracion", url: '/configuracion/establecimiento', },
                 ],
             },
