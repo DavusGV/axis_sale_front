@@ -116,6 +116,7 @@ import BalanceView from '@/views/finanzas/BalanceView.vue';
 import ReporteCreditoView from '@/views/reportes/ReporteCreditoView.vue';
 import ConfiguracionView from '@/views/configuracion/Configuracion.View.vue';
 import ContizacionView from '@/views/ventas/ContizacionView.vue';
+import VentasHistorialView from '@/views/ventas/VentasHistorialView.vue';
 
 
 const router = createRouter({
@@ -798,6 +799,12 @@ const router = createRouter({
       path: '/cotizacion',
       name: 'cotizacion',
       component: ContizacionView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/ventas/historial',
+      name: 'historialventas',
+      component: VentasHistorialView,
       meta: { requiresAuth: true } 
     },
     {

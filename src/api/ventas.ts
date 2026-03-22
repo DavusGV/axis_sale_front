@@ -80,3 +80,28 @@ export async function fetchTicket(ventaId: number) {
     const res = await axiosInstance.get(`/ventas/${ventaId}/ticket`)
     return res.data.data
 }
+
+//funciones de historial
+// historial de ventas con filtros
+export async function fetchHistorialVentas(params: any = {}) {
+  const res = await axiosInstance.get('/ventas/historial', { params })
+  return res.data
+}
+
+// cancelar una venta y devolver stock
+export async function cancelarVenta(ventaId: number) {
+  const res = await axiosInstance.post(`/ventas/${ventaId}/cancelar`)
+  return res.data
+}
+
+// actualizar metodo de pago de una venta
+export async function actualizarMetodoPago(ventaId: number, data: any) {
+  const res = await axiosInstance.put(`/ventas/${ventaId}/metodo-pago`, data)
+  return res.data
+}
+
+// actualizar detalles de una venta (cantidades, precios, eliminar productos)
+export async function actualizarDetallesVenta(ventaId: number, data: any) {
+  const res = await axiosInstance.put(`/ventas/${ventaId}/detalles`, data)
+  return res.data
+}
