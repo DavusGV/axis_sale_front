@@ -6,11 +6,14 @@ import Cart from '@/components/ventas/Cart.vue'
 import ResumenVenta from '@/components/ventas/ResumenVenta.vue'
 import ModalPago from '@/components/ventas/ModalPago.vue'
 import ModalDescuentoProducto from '@/components/ventas/ModalDescuentoProducto.vue'
-import { buscarPorCodigoBarras, registrarVenta, fetchProducts } from '@/api/ventas'
+import { buscarPorCodigoBarras, registrarVenta, fetchProducts, fetchTicket } from '@/api/ventas'
+import { fetchConfiguracion } from '@/api/configuracion'
 import { useAuthStore } from '@/stores/authStore'
 import { crearPlanPago } from '@/api/planes_pago'
 import Swal from 'sweetalert2'
 import ModalAbono from '@/components/creditos/ModalAbonoCredito.vue'
+import ModalTicket from '@/components/ventas/ModalTicket.vue'
+import ModalPrecioServicio from '@/components/ventas/ModalPrecioServicio.vue'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
@@ -19,6 +22,7 @@ const search = ref('')
 const carrito = ref<any[]>([])
 const page = ref(1)
 const lastPage = ref(1)
+const configuracion = ref<any>(null)
 
 // El total se recalcula dinamicamente usando descuento y tipo_descuento
 // para que al cambiar la cantidad el descuento se ajuste correctamente
@@ -30,7 +34,7 @@ const total = computed(() =>
     if (item.tipo_descuento === 'porcentaje') {
       descAplicado = subtotal * ((item.descuento ?? 0) / 100)
     } else if (item.tipo_descuento === 'monto') {
-      descAplicado = item.descuento ?? 0
+      descAplicado = (item.descuento ?? 0) * item.cantidad
     }
 
     return acc + (subtotal - descAplicado)
@@ -46,7 +50,7 @@ const carritoConDescuento = computed(() =>
     if (item.tipo_descuento === 'porcentaje') {
       desc_aplicado = subtotal * ((item.descuento ?? 0) / 100)
     } else if (item.tipo_descuento === 'monto') {
-      desc_aplicado = item.descuento ?? 0
+      desc_aplicado = (item.descuento ?? 0) * item.cantidad
     }
 
     return { ...item, descuento_aplicado: desc_aplicado }
@@ -57,7 +61,11 @@ const showModalPago = ref(false)
 const defaultImg = '/images/home/vuejs.png'
 const loading = ref(false)
 const showModalAbono = ref(false)
-
+const showModalTicket = ref(false)
+const ticketData = ref<any>(null)
+const showModalPrecioServicio = ref(false)
+const productoServicioTemp = ref<any>(null)
+  
 //NUEVAS VARIABLES PARA SCANNER
 let codigoBuffer = ''
 let timeoutScanner: ReturnType<typeof setTimeout> | null = null
@@ -91,6 +99,11 @@ watch(
 onMounted(async () => {
   await loadProducts()
   iniciarEscuchaScanner() // Activar scanner automatico
+  // cargamos la configuracion del establecimiento
+  try {
+    configuracion.value = await fetchConfiguracion()
+  } catch {
+  }
 })
 
 onUnmounted(() => {
@@ -182,11 +195,23 @@ async function procesarCodigoEscaneado() {
 }
 
 function agregarAlCarrito(producto: any) {
+  // si es servicio, abrir modal para pedir precio
+  if (producto.es_servicio) {
+    productoServicioTemp.value = producto
+    showModalPrecioServicio.value = true
+    return
+  }
+
+  agregarItemAlCarrito(producto, producto.precio_venta)
+}
+
+// funcion que realmente agrega al carrito (usada por producto normal y servicio)
+function agregarItemAlCarrito(producto: any, precioVenta: number) {
   const idx = carrito.value.findIndex(item => item.producto_id === producto.id)
   const cantidadActual = idx !== -1 ? carrito.value[idx].cantidad : 0
 
-  // validamos el stock si hay productos disponibles
-  if (cantidadActual + 1 > producto.stock) {
+  // validamos stock solo si NO es servicio
+  if (!producto.es_servicio && cantidadActual + 1 > producto.stock) {
     Swal.fire({
       icon: 'warning',
       title: 'Stock insuficiente',
@@ -202,13 +227,21 @@ function agregarAlCarrito(producto: any) {
     carrito.value.push({
       producto_id: producto.id,
       nombre: producto.nombre,
-      precio: producto.precio_venta,
+      precio: precioVenta,
       precio_compra: producto.precio_compra,
       cantidad: 1,
-      stock: producto.stock, // opcional pero util en frontend
-      imagen: producto.imagen_url || defaultImg
+      stock: producto.stock,
+      imagen: producto.imagen_url || defaultImg,
+      es_servicio: producto.es_servicio ?? false
     })
   }
+}
+
+// cuando confirma el precio del servicio desde el modal
+function confirmarPrecioServicio(productoConPrecio: any) {
+  agregarItemAlCarrito(productoConPrecio, productoConPrecio.precio_venta)
+  showModalPrecioServicio.value = false
+  productoServicioTemp.value = null
 }
 
 const loadProducts = async () => {
@@ -224,7 +257,7 @@ function sumarCantidad(id: number) {
   const item = carrito.value.find(i => i.producto_id === id)
   if (!item) return
 
-  if (item.cantidad + 1 > item.stock) {
+  if (!item.es_servicio && item.cantidad + 1 > item.stock) {
     Swal.fire({
       icon: 'warning',
       title: 'Stock insuficiente',
@@ -282,6 +315,12 @@ function aplicarDescuentoProducto({ descuento_aplicado, tipo_descuento, descuent
   productoDescuento.value = null
 }
 
+function cambiarPrecioServicio(producto_id: number, nuevoPrecio: number) {
+  const item = carrito.value.find(i => i.producto_id === producto_id)
+  if (!item) return
+  item.precio = nuevoPrecio
+}
+
 async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_final, es_credito, credito }: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const usuario_id = user.id
@@ -294,7 +333,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     if (item.tipo_descuento === 'porcentaje') {
       desc_aplicado = subtotalBruto * ((item.descuento ?? 0) / 100)
     } else if (item.tipo_descuento === 'monto') {
-      desc_aplicado = item.descuento ?? 0
+      desc_aplicado = (item.descuento ?? 0) * item.cantidad
     }
 
     return {
@@ -347,13 +386,10 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     await loadProducts()
     Swal.close()
 
-    Swal.fire({
-      icon: 'success',
-      title: es_credito ? 'Venta a credito registrada!' : 'Venta realizada!',
-      text: resultado.message || 'La venta se registro correctamente.',
-      confirmButtonText: 'Cerrar',
-      confirmButtonColor: '#22c55e'
-    })
+    // cargamos el ticket con los datos de la venta recien registrada
+    const ticket = await fetchTicket(resultado.data.venta.id)
+    ticketData.value = ticket.ticket
+    showModalTicket.value = true
 
   } catch (e: any) {
     Swal.close()
@@ -492,6 +528,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
         @restar="restarCantidad"
         @eliminar="eliminarDelCarrito"
         @descuento="abrirDescuentoProducto"
+        @cambiar-precio="cambiarPrecioServicio"
       />
       <ResumenVenta
         :total="total"
@@ -516,9 +553,26 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     <!-- Modal descuento producto individual -->
     <ModalDescuentoProducto
       v-if="showModalDescuentoProducto && productoDescuento"
+      :key="productoDescuento.producto_id"
       :item="productoDescuento"
       @close="showModalDescuentoProducto = false"
       @confirmar="aplicarDescuentoProducto"
+    />
+
+    <ModalTicket
+      v-if="showModalTicket && ticketData"
+      :ticket="ticketData"
+      :impresora_ancho="configuracion?.impresora_ancho ?? 80"
+      :impresora_alto="configuracion?.impresora_alto ?? 200"
+      @close="showModalTicket = false"
+    />
+
+    <!-- Modal precio servicio -->
+    <ModalPrecioServicio
+      v-if="showModalPrecioServicio && productoServicioTemp"
+      :producto="productoServicioTemp"
+      @close="showModalPrecioServicio = false"
+      @confirmar="confirmarPrecioServicio"
     />
   </div>
 </template>

@@ -114,6 +114,7 @@ import TipoGastosView from "@/views/finanzas/TipoGastosView.vue";
 import GastosView from "@/views/finanzas/GastosView.vue";
 import BalanceView from '@/views/finanzas/BalanceView.vue';
 import ReporteCreditoView from '@/views/reportes/ReporteCreditoView.vue';
+import ConfiguracionView from '@/views/configuracion/Configuracion.View.vue';
 
 
 const router = createRouter({
@@ -768,7 +769,12 @@ const router = createRouter({
       component: ProductosView,
       meta: { requiresAuth: true } 
     },
-
+    {
+      path: '/configuracion/establecimiento',
+      name: 'Configuracion',
+      component: ConfiguracionView,
+      meta: { requiresAuth: true } 
+    },
     {
       path: '/cajas',
       name: 'cajas',

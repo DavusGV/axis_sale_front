@@ -49,9 +49,10 @@ const labels = computed(() => historial.value.map(h => h.label))
 
 const seriesIngresos = computed(() => historial.value.map(h => h.ingresos))
 const seriesGastos   = computed(() => historial.value.map(h => h.gastos))
+const seriesBalance  = computed(() => historial.value.map(h => h.balance))
 
-// indices de meses con perdida para marcar en la grafica
-const puntosPerdida = computed(() =>
+// indices de meses con mayor inversion para marcar en la grafica
+const puntosInversion = computed(() =>
   historial.value
     .map((h, i) => (!h.es_ganancia ? i : null))
     .filter(i => i !== null)
@@ -59,22 +60,25 @@ const puntosPerdida = computed(() =>
 
 const chartOptions = computed(() => ({
   chart: {
-    type: 'area' as const,
+    type: 'bar' as const,
     toolbar: { show: false },
     zoom: { enabled: false },
     background: 'transparent',
-    parentHeightOffset: 0, 
-    offsetX: 0,
-    width: '100%',
+    parentHeightOffset: 0,
   },
   stroke: {
+    width: [0, 0, 3],
     curve: 'smooth' as const,
-    width: [3, 3],
   },
-  colors: ['#10B981', '#EF4444'],
+  colors: ['#10B981', '#3B82F6', '#F59E0B'],
+  plotOptions: {
+    bar: {
+      borderRadius: 4,
+      columnWidth: '50%',
+    },
+  },
   xaxis: {
     categories: labels.value,
-    tickPlacement: 'on',
     labels: {
       trim: true,
       style: {
@@ -84,6 +88,8 @@ const chartOptions = computed(() => ({
     },
   },
   yaxis: {
+    // permite que el eje baje de 0 cuando hay balance negativo
+    forceNiceScale: true,
     labels: {
       style: { colors: theme.isDark ? '#9CA3AF' : '#6B7280' },
       formatter: (v: number) => '$' + v.toFixed(0),
@@ -100,66 +106,83 @@ const chartOptions = computed(() => ({
   },
   tooltip: {
     theme: theme.isDark ? 'dark' : 'light',
+    shared: true,
+    intersect: false,
     y: { formatter: (v: number) => '$' + v.toFixed(2) },
   },
-  // zona de perdida: fondo rojo suave cuando gastos > ingresos
-  annotations: {
-    points: puntosPerdida.value.map(i => ({
-      x: labels.value[i!],
-      y: seriesGastos.value[i!],
-      marker: {
-        size: 6,
-        fillColor: '#EF4444',
-        strokeColor: '#fff',
-        radius: 3,
-      },
-      label: {
-        text: 'Perdida',
-        style: {
-          background: '#EF4444',
-          color: '#fff',
-          fontSize: '10px',
-          padding: { left: 4, right: 4, top: 2, bottom: 2 },
-        },
-      },
-    })),
-  },
   markers: {
-    size: 4,
-    hover: { size: 6 },
+    size: [0, 0, 5],
+    hover: { size: 7 },
   },
   fill: {
-    type: 'gradient',
-    gradient: {
-      shade: theme.isDark ? 'dark' : 'light',
-      type: 'vertical',
-      shadeIntensity: 0.4,
-      gradientToColors: ['#10B981', '#EF4444'],
-      inverseColors: false,
-      opacityFrom: 0.5,
-      opacityTo: 0.05,
-      stops: [0, 90, 100],
-    },
+    opacity: [0.9, 0.9, 1],
+  },
+  dataLabels: {
+    enabled: false,
+  },
+  // linea horizontal en 0 para referencia visual
+  annotations: {
+    yaxis: [
+      {
+        // eje izquierdo — para las barras (ingresos y gastos)
+        forceNiceScale: true,
+        title: { text: 'Monto ($)', style: { color: theme.isDark ? '#9CA3AF' : '#6B7280' } },
+        labels: {
+          style: { colors: theme.isDark ? '#9CA3AF' : '#6B7280' },
+          formatter: (v: number) => '$' + v.toFixed(0),
+        },
+      },
+      {
+        // segunda barra usa el mismo eje izquierdo
+        show: false,
+        seriesName: 'Ingresos Generados',
+      },
+      {
+        // eje derecho — para la linea de resultado
+        opposite: true,
+        forceNiceScale: true,
+        title: { text: 'Resultado ($)', style: { color: '#F59E0B' } },
+        labels: {
+          style: { colors: '#F59E0B' },
+          formatter: (v: number) => '$' + v.toFixed(0),
+        },
+      },
+    ],
   },
 }))
 
 const series = computed(() => [
-  { name: 'Ingresos', data: seriesIngresos.value },
-  { name: 'Gastos',   data: seriesGastos.value },
+  { name: 'Ingresos Generados', type: 'bar',  data: seriesIngresos.value },
+  { name: 'Gastos operativos', type: 'bar',  data: seriesGastos.value },
+  { name: 'Resultado del mes',  type: 'line', data: seriesBalance.value },
 ])
 
-// Resumen del historial: cuantos meses con ganancia vs perdida
-const mesesGanancia = computed(() => historial.value.filter(h => h.es_ganancia).length)
-const mesesPerdida  = computed(() => historial.value.filter(h => !h.es_ganancia).length)
+// meses que tuvieron al menos un ingreso
+const mesesConIngresos = computed(() =>
+  historial.value.filter(h => h.ingresos > 0).length
+)
 
-const mejorMes = computed(() => {
+// meses que tuvieron al menos una inversion (gasto)
+const mesesConInversiones = computed(() =>
+  historial.value.filter(h => h.gastos > 0).length
+)
+
+// mes con mayor ingreso registrado
+const mesMayorIngreso = computed(() => {
   if (!historial.value.length) return null
-  return historial.value.reduce((a, b) => (a.balance > b.balance ? a : b))
+  return historial.value.reduce((a, b) => (a.ingresos > b.ingresos ? a : b))
 })
 
-const peorMes = computed(() => {
+// mes con menor ingreso registrado
+const mesMenorIngreso = computed(() => {
   if (!historial.value.length) return null
-  return historial.value.reduce((a, b) => (a.balance < b.balance ? a : b))
+  return historial.value.reduce((a, b) => (a.ingresos < b.ingresos ? a : b))
+})
+
+// mes con mayor inversion (mayor gasto)
+const mesMayorInversion = computed(() => {
+  if (!historial.value.length) return null
+  return historial.value.reduce((a, b) => (a.gastos > b.gastos ? a : b))
 })
 </script>
 
@@ -170,20 +193,8 @@ const peorMes = computed(() => {
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
         <i class="fa-solid fa-chart-line text-indigo-500"></i>
-        Historial — Ingresos vs Gastos
+        Historial — Ingresos Generados vs Gastos Operativos
       </h3>
-
-      <!-- resumen rapido -->
-      <div class="flex items-center gap-3 text-xs">
-        <span class="flex items-center gap-1 text-emerald-600 font-medium">
-          <i class="fa-solid fa-arrow-trend-up"></i>
-          {{ mesesGanancia }} con ganancia
-        </span>
-        <span class="flex items-center gap-1 text-red-500 font-medium">
-          <i class="fa-solid fa-arrow-trend-down"></i>
-          {{ mesesPerdida }} con perdida
-        </span>
-      </div>
     </div>
 
     <!-- loading -->
@@ -203,7 +214,7 @@ const peorMes = computed(() => {
       <div class="w-full overflow-hidden">
         <VueApexCharts
           height="280"
-          type="area"
+          type="bar"
           :series="series"
           :options="chartOptions"
         />
@@ -215,9 +226,9 @@ const peorMes = computed(() => {
           <thead>
             <tr class="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
               <th class="text-left pb-2 font-medium">Mes</th>
-              <th class="text-right pb-2 font-medium text-emerald-600">Ingresos</th>
-              <th class="text-right pb-2 font-medium text-red-500">Gastos</th>
-              <th class="text-right pb-2 font-medium">Balance</th>
+              <th class="text-right pb-2 font-medium text-emerald-600">Ingresos Obtenidos</th>
+              <th class="text-right pb-2 font-medium text-blue-500">Gastos Realizados</th>
+              <th class="text-right pb-2 font-medium">Saldo Restante (Balance)</th>
             </tr>
           </thead>
           <tbody>
@@ -242,12 +253,12 @@ const peorMes = computed(() => {
               <td class="py-2 text-right text-emerald-600 font-medium">
                 ${{ h.ingresos.toFixed(2) }}
               </td>
-              <td class="py-2 text-right text-red-500 font-medium">
+              <td class="py-2 text-right text-blue-500 font-medium">
                 ${{ h.gastos.toFixed(2) }}
               </td>
               <td
                 class="py-2 text-right font-bold"
-                :class="h.es_ganancia ? 'text-emerald-600' : 'text-red-500'"
+                :class="h.balance >= 0 ? 'text-emerald-600' : 'text-yellow-500'"
               >
                 {{ h.balance < 0 ? '-' : '' }}${{ Math.abs(h.balance).toFixed(2) }}
               </td>
@@ -256,19 +267,24 @@ const peorMes = computed(() => {
         </table>
       </div>
 
-      <!-- mejor y peor mes -->
-      <div class="grid grid-cols-2 gap-3 mt-4" v-if="mejorMes && peorMes">
+      <!-- mayor ingreso y menor ingreso mes -->
+      <div class="grid grid-cols-3 gap-3 mt-4" v-if="mesMayorIngreso && mesMenorIngreso && mesMayorInversion">
         <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3">
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Mejor mes</p>
-          <p class="text-sm font-bold text-emerald-600 capitalize">{{ mejorMes.label }}</p>
-          <p class="text-xs text-emerald-500">${{ mejorMes.balance.toFixed(2) }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Mayor ingreso</p>
+          <p class="text-sm font-bold text-emerald-600 capitalize">{{ mesMayorIngreso.label }}</p>
+          <p class="text-xs text-emerald-500">${{ mesMayorIngreso.ingresos.toFixed(2) }}</p>
         </div>
-        <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Peor mes</p>
-          <p class="text-sm font-bold text-red-500 capitalize">{{ peorMes.label }}</p>
-          <p class="text-xs text-red-400">
-            {{ peorMes.balance < 0 ? '-' : '' }}${{ Math.abs(peorMes.balance).toFixed(2) }}
-          </p>
+
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Menor ingreso</p>
+          <p class="text-sm font-bold text-yellow-500 capitalize">{{ mesMenorIngreso.label }}</p>
+          <p class="text-xs text-yellow-400">${{ mesMenorIngreso.ingresos.toFixed(2) }}</p>
+        </div>
+
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Mayor inversion</p>
+          <p class="text-sm font-bold text-blue-500 capitalize">{{ mesMayorInversion.label }}</p>
+          <p class="text-xs text-blue-400">${{ mesMayorInversion.gastos.toFixed(2) }}</p>
         </div>
       </div>
 

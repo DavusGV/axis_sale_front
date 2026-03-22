@@ -24,7 +24,20 @@
       <div class="flex-1">
         <div class="font-semibold text-gray-700 dark:text-gray-200">{{ item.nombre }}</div>
         <div class="text-xl text-gray-400 dark:text-gray-500">
-          ${{ item.precio }} x {{ item.cantidad }}
+          <template v-if="item.es_servicio">
+            $<input
+              type="number"
+              :value="item.precio"
+              min="0"
+              step="0.01"
+              class="w-20 inline-block text-center bg-transparent border-b border-gray-400 
+                    dark:border-gray-500 focus:outline-none focus:border-green-500 text-gray-400"
+              @change="$emit('cambiarPrecio', item.producto_id, Number($event.target.value))"
+            /> x {{ item.cantidad }}
+          </template>
+          <template v-else>
+            ${{ item.precio }} x {{ item.cantidad }}
+          </template>
         </div>
         <div v-if="item.descuento" class="text-xs text-green-600">
           Desc: {{ item.tipo_descuento === 'porcentaje' ? item.descuento + '%' : '$' + item.descuento }}
@@ -80,5 +93,5 @@
 
 <script setup>
 defineProps(['items', 'img'])
-defineEmits(['sumar', 'restar', 'eliminar', 'descuento'])
+defineEmits(['sumar', 'restar', 'eliminar', 'descuento', 'cambiarPrecio'])
 </script>

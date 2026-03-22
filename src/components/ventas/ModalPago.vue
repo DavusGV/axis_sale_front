@@ -114,7 +114,12 @@
               <span class="font-bold text-blue-600">${{ totalFinanciado.toFixed(2) }}</span>
             </div>
             <div v-if="numPlazos > 0" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">Cuota {{ tipoPlazo }} (1-{{ numPlazos - 1 }}):</span>
+              <span class="text-gray-500 dark:text-gray-400">
+                Cuota
+                <template v-if="tipoPlazo === 'dias'">cada {{ intervaloDias }} dias</template>
+                <template v-else>{{ tipoPlazo }}</template>
+                (1-{{ numPlazos - 1 }}):
+              </span>
               <span class="font-bold text-green-600">${{ montoCuota.toFixed(2) }}</span>
             </div>
             <div v-if="numPlazos > 1" class="flex justify-between">
@@ -252,8 +257,8 @@
               <select
                 v-model="tipoPlazo"
                 class="block w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700
-                       bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
-                       focus:ring-1 focus:ring-green-400 transition text-sm"
+                      bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                      focus:ring-1 focus:ring-green-400 transition text-sm"
               >
                 <option value="mensual">Mensual</option>
                 <option value="semanal">Semanal</option>
@@ -261,18 +266,34 @@
               </select>
             </div>
 
-            <!-- num plazos -->
+            <!-- num plazos (siempre visible) -->
             <div>
               <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ tipoPlazo === 'dias' ? 'Cada cuantos dias' : 'Numero de plazos' }}
+                Numero de plazos
               </label>
               <input
                 v-model.number="numPlazos"
                 type="number"
                 min="1"
                 class="block w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700
-                       bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
-                       focus:ring-1 focus:ring-green-400 transition text-sm"
+                      bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                      focus:ring-1 focus:ring-green-400 transition text-sm"
+                placeholder="1"
+              />
+            </div>
+
+            <!-- cada cuantos dias (solo visible cuando tipo_plazo es dias) -->
+            <div v-if="tipoPlazo === 'dias'">
+              <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                Cada cuantos dias
+              </label>
+              <input
+                v-model.number="intervaloDias"
+                type="number"
+                min="1"
+                class="block w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700
+                      bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                      focus:ring-1 focus:ring-green-400 transition text-sm"
                 placeholder="1"
               />
             </div>
@@ -365,6 +386,7 @@ const inputPago = ref<HTMLInputElement | null>(null)
 const anticipo        = ref(0)
 const tipoPlazo       = ref('mensual')
 const numPlazos       = ref(1)
+const intervaloDias   = ref(1)
 const interesTipo     = ref('')
 const interesValor    = ref(0)
 const fechaInicio     = ref(new Date().toISOString().split('T')[0])
@@ -552,8 +574,8 @@ async function confirmarVenta() {
     return
   }
 
-  if (!numPlazos.value || numPlazos.value <= 0) {
-    Swal.fire({ icon: 'warning', title: 'Plazos requeridos', text: 'Ingresa el numero de plazos.', confirmButtonColor: '#ef4444' })
+  if (tipoPlazo.value === 'dias' && (!intervaloDias.value || intervaloDias.value <= 0)) {
+    Swal.fire({ icon: 'warning', title: 'Intervalo requerido', text: 'Ingresa cada cuantos dias se cobra.', confirmButtonColor: '#ef4444' })
     return
   }
 
@@ -575,6 +597,7 @@ async function confirmarVenta() {
       interes_valor: interesValor.value || 0,
       num_plazos:    numPlazos.value,
       tipo_plazo:    tipoPlazo.value,
+      intervalo_dias: tipoPlazo.value === 'dias' ? intervaloDias.value : null,
       fecha_inicio:  fechaInicio.value,
     }
   })

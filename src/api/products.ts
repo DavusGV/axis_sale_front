@@ -32,7 +32,12 @@ export async function createProduct(product: any) {
 
   Object.keys(product).forEach(key => {
     if (product[key] !== null && product[key] !== undefined) {
-      form.append(key, product[key])
+      // convertir booleanos a 1/0 para que PHP los interprete bien
+      if (typeof product[key] === 'boolean') {
+        form.append(key, product[key] ? '1' : '0')
+      } else {
+        form.append(key, product[key])
+      }
     }
   })
   const res = await axiosInstance.post("/products", form, {
@@ -51,7 +56,12 @@ export async function updateProduct(product: any) {
   // Agregar todos los campos
   Object.keys(product).forEach(key => {
     if (product[key] !== null && product[key] !== undefined) {
-      form.append(key, product[key])
+      // convertir booleanos a 1/0 para que PHP los interprete bien
+      if (typeof product[key] === 'boolean') {
+        form.append(key, product[key] ? '1' : '0')
+      } else {
+        form.append(key, product[key])
+      }
     }
   })
   // Asegurar que imagen se mande como archivo si existe

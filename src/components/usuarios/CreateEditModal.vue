@@ -154,7 +154,7 @@ async function submit() {
 
     await createUser(form.value)
     Swal.close()
-    await Swal.fire('Éxito', 'Usuario creado correctamente', 'success')
+    await Swal.fire({title: 'Exito', text: 'Usuario creado correctamente', icon: 'success', confirmButtonColor: '#10B981', })
 
     emit('success')
     emit('close')
