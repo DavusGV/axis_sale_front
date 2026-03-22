@@ -17,3 +17,10 @@ export async function fetchHistorySales(historyId: number) {
   })
   return res.data
 }
+
+export async function historyBoxPdf(historyId: number) {
+  const res = await axiosInstance.get(`/ventas-pdf/box-history/${historyId}`, {
+    responseType: 'blob', // Indica que la respuesta es un archivo binario (pdf)
+  })
+  return res.data
+}

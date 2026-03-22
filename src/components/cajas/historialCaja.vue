@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import Swal from 'sweetalert2'
-import FlexTable from '@/components/flex/FlexTable.vue'
+import DataTable from '@/components/plantillas/DataTable.vue';
+import TableActions from '../shared/TableActions.vue';
 import PlaceloadList from '@/components/placeload/PlaceLoadList.vue'
-import { fetchHistoryBox } from '@/api/cajas'
+import { fetchHistoryBox, historyBoxPdf } from '@/api/cajas'
 
 interface HistoryBox {
   id: number
   estado: string
   saldo_inicial: string
   saldo_final: string
-  fecha_apertura: string
-  fecha_cierre: string
   created_at: string
   updated_at: string
   caja?: {
@@ -28,8 +27,8 @@ interface PaginationResponse {
   per_page: number
 }
 
+const loadingPdf = ref<number | null>(null)
 const props = defineProps<{
-  show: boolean
   historyId: number | null
 }>()
 
@@ -56,15 +55,25 @@ const history = computed(() => {
     estado: item.estado,
     saldo_inicial: formatMoney(Number(item.saldo_inicial)),
     saldo_final: formatMoney(Number(item.saldo_final)),
-    fecha_apertura: formatDate(item.fecha_apertura),
-    fecha_cierre: formatDate(item.fecha_cierre)
+    fecha_apertura: formatDate(item.created_at),
+    fecha_cierre: formatDate(item.updated_at)
   }))
 })
 
 
 function formatDate(date?: string) {
   if (!date) return '—'
-  return new Date(date.replace(' ', 'T')).toLocaleString('es-MX')
+
+  const d = new Date(date.replace(' ', 'T'))
+
+  return d.toLocaleString('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  })
 }
 
 function formatMoney(value?: number) {
@@ -88,7 +97,6 @@ const columns = [
 
 async function loadHistory() {
   if (!props.historyId) return
-
   loading.value = true
 
   try {
@@ -97,14 +105,11 @@ async function loadHistory() {
     })
 
     const pagination: PaginationResponse = res.data
-
     rawHistory.value = Array.isArray(pagination.data)
-      ? pagination.data
-      : []
-
+      ? pagination.data : []
     total.value = pagination.total
     currentPage.value = pagination.current_page
-    totalPages.value = pagination.last_page
+    totalPages.value  = pagination.last_page
 
     calculateIndexes(pagination.per_page)
   } catch (error) {
@@ -115,13 +120,56 @@ async function loadHistory() {
   }
 }
 
+const generarPdf = async (id: number) => {
+  try {
+    Swal.fire({
+      title: 'Generando PDF...',
+      text: 'Por favor espera',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading()
+      }
+    })
+    const pdfBlob = await historyBoxPdf(id)
+    const url = URL.createObjectURL(pdfBlob)
+
+    Swal.close()
+    window.open(url, '_blank')
+    URL.revokeObjectURL(url)
+
+  } catch (error) {
+    console.error(error)
+    Swal.fire('Error', 'No se pudo generar el PDF', 'error')
+  }
+}
+
+// const descargarPdf = async (id: number) => {
+//   try {
+
+//     const pdfBlob = await historyBoxPdf(id)
+//     const url = URL.createObjectURL(pdfBlob)
+//     const link = document.createElement("a")
+//     link.href = url
+//     link.download = `historial_caja_${id}.pdf`
+
+//     document.body.appendChild(link)
+//     link.click()
+//     document.body.removeChild(link)
+
+//     URL.revokeObjectURL(url)
+
+//   } catch (error) {
+//     console.error(error)
+//     Swal.fire('Error', 'No se pudo descargar el PDF', 'error')
+//   }
+// }
+
 function calculateIndexes(perPage: number) {
   if (!rawHistory.value.length) {
     startIndex.value  = 0
     endIndex.value    = 0
     return
   }
-
   startIndex.value = (currentPage.value - 1) * perPage + 1
   endIndex.value = startIndex.value + rawHistory.value.length - 1
 }
@@ -144,39 +192,48 @@ function paginate(p: number) {
 }
 
 watch(
-  () => props.show,
-  (show) => {
-    if (!show || !props.historyId) return
-    page.value = 1
-    loadHistory()
-  }
-)
-
-watch(
   () => props.historyId,
   (id) => {
-    if (!props.show || !id) return
+    if (!id) return
     page.value = 1
     loadHistory()
-  }
+  },
+  { immediate: true }
 )
+
 </script>
+
 <template>
-  <div v-if="show" class="box">
-    <PlaceloadList v-if="loading" />
-    <FlexTable
-      v-else
-      :items="history"
-      :total="total"
-      :current-page="currentPage"
-      :columns="columns"
-      :loading="loading"
-      :start-index="startIndex"
-      :end-index="endIndex"
-      :total-pages="totalPages"
-      :paginate="paginate"
-      :next-page="nextPage"
-      :prev-page="prevPage"
-    />
-  </div>
+  <PlaceloadList v-if="loading" />
+  <DataTable
+    v-else
+    :items="history"
+    :total="total"
+    :current-page="currentPage"
+    :columns="columns"
+    :loading="loading"
+    :start-index="startIndex"
+    :end-index="endIndex"
+    :total-pages="totalPages"
+    :paginate="paginate"
+    :next-page="nextPage"
+    :prev-page="prevPage"
+  >
+  // aqui se agregan las acciones ya no en la plantilla ya que es universal
+    <template #actions="{ item }">
+      <button
+        class="btn !px-2 !py-1 !text-xs flex items-center gap-1" 
+        @click="generarPdf(Number(item.id))"
+        >
+        <i class="fas fa-file-pdf text-md"></i>
+      </button>
+
+      <!-- <button
+        class="btn !px-2 !py-1 !text-xs flex items-center gap-1"
+        @click="descargarPdf(Number(item.id))"
+        >
+        <i class="fas fa-download text-md"></i>
+      </button> -->
+    </template>
+  </DataTable>
 </template>

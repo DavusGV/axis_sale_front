@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import FlexListTwo from '@/components/cajas/CajasTable.vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
 import HistorialCaja from '@/components/cajas/historialCaja.vue'
@@ -38,6 +38,12 @@ onMounted(() => {
   }
 })
 
+//revueve la vista cuando se cambia de apartado
+onBeforeUnmount(() => {
+  sessionStorage.removeItem('currentView')
+  sessionStorage.removeItem('activeBoxId')
+})
+
 const PagesTitle = computed(() => {
   return currentView.value === 'historial' 
       ? 'Historial de Caja' 
@@ -66,7 +72,7 @@ v-if="currentView === 'cajas'"
   />
 
   <HistorialCaja
-    :show="currentView === 'historial' && !!selectedBoxId"
+    v-if="currentView === 'historial' && selectedBoxId"
     :historyId="selectedBoxId"
     @close="closeHistoryModal"
   />

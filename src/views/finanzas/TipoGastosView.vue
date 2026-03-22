@@ -2,6 +2,7 @@
 import agregarTipoGasto from '@/components/finanzas/agregarTipoGasto.vue';
 import TopBanner from '@/components/shared/TopBanner.vue';
 import DataTable from '@/components/plantillas/DataTable.vue';
+import TableActions from '@/components/shared/TableActions.vue'
 import { registrarTipoGasto, fetchTgastos, deleteType, editarTipoGasto} from '@/api/finanzas'
 import { ref, onMounted  } from "vue";
 import PlaceloadList from '@/components/placeload/PlaceLoadList.vue'
@@ -289,19 +290,28 @@ onMounted(() => {
                   @search="handleSearch"
                   />
                 <DataTable
-                :items="tgastos"
-                :columns="columns"
-                :currentPage="currentPage"
-                :totalPages="totalPages"
-                :total="total"
-                :startIndex="startIndex"
-                :endIndex="endIndex"
-                :paginate="paginate"
-                :nextPage="nextPage"
-                :prevPage="prevPage"
-                @delete="handleDelete"
-                @edit="handleEdit"
-              />
+                  :items="tgastos"
+                  :columns="columns"
+                  :currentPage="currentPage"
+                  :totalPages="totalPages"
+                  :total="total"
+                  :startIndex="startIndex"
+                  :endIndex="endIndex"
+                  :paginate="paginate"
+                  :nextPage="nextPage"
+                  :prevPage="prevPage"
+                >
+
+                // aqui se agregan las acciones ya no en la plantilla ya que es universal
+                <template #actions="{ item, index }">
+                  <TableActions
+                    :from-bottom="index >= tgastos.length - 2"
+                    :on-edit="() => handleEdit(item)"
+                    :on-delete="() => handleDelete(Number(item.id))"
+                  />
+                </template>
+
+                </DataTable>
             </div>
         </div>
     </div>

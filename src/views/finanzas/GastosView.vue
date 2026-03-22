@@ -3,6 +3,7 @@ import ResumenGasto from '@/components/finanzas/ResumenGasto.vue'
 import { fetchGastos, deleteGasto } from '@/api/finanzas'
 import { ref, onMounted, watch, computed } from "vue"
 import DataTable from '@/components/plantillas/DataTable.vue'
+import TableActions from '@/components/shared/TableActions.vue'
 import PlaceloadList from '@/components/placeload/PlaceLoadList.vue'
 import ModalGasto from '@/components/finanzas/ModalGastos.vue'
 import Swal from 'sweetalert2'
@@ -335,7 +336,16 @@ const gastoGuardado = () => {
           :prevPage="prevPage"
           @delete="handleDelete"
           @edit="handleEdit"
-        />
+        >
+          // aqui se agregan las acciones ya no en la plantilla ya que es universal
+          <template #actions="{ item, index }">
+            <TableActions
+              :from-bottom="index >= tgastos.length - 2"
+              :on-edit="() => handleEdit(item)"
+              :on-delete="() => handleDelete(Number(item.id))"
+            />
+          </template>
+        </DataTable>
       </div>
 
       <!-- resumen lateral con grafica -->
