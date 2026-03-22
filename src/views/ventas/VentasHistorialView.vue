@@ -189,6 +189,11 @@ async function confirmarCancelar(venta: any) {
     Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la venta.' })
   }
 }
+function colorStatus(status: string) {
+  if (status === 'vendido')   return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+  if (status === 'cancelada') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  return 'bg-gray-100 text-gray-600'
+}
 </script>
 
 <template>
@@ -288,6 +293,36 @@ async function confirmarCancelar(venta: any) {
       :nextPage="nextPage"
       :prevPage="prevPage"
     >
+      <!-- celdas personalizadas -->
+      <template #cell="{ item, column, value }">
+
+        <!-- total formateado -->
+        <template v-if="column.key === 'total'">
+          <span class="font-medium">${{ Number(value).toFixed(2) }}</span>
+        </template>
+
+        <!-- status con badge -->
+        <template v-else-if="column.key === 'status'">
+          <span :class="['px-2 py-1 rounded-full text-xs font-medium capitalize', colorStatus(item.status)]">
+            {{ item.status }}
+          </span>
+        </template>
+
+        <!-- metodo de pago capitalizado -->
+        <template v-else-if="column.key === 'metodo_pago'">
+          <span class="capitalize">{{ value ?? '--' }}</span>
+        </template>
+
+        <!-- cliente -->
+        <template v-else-if="column.key === 'cliente'">
+          {{ value ?? '--' }}
+        </template>
+
+        <!-- cualquier otra columna -->
+        <template v-else>
+          {{ value ?? '--' }}
+        </template>
+      </template>
       <template #actions="{ item, index }">
         <div class="relative flex justify-center" :ref="el => setDropdownRef(el, item.id)">
           <button

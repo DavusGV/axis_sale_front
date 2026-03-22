@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-vue'
-import { ref, watch, onMounted } from 'vue'
+import DataTable from '@/components/plantillas/DataTable.vue'
+import ModalDetalleCredito from '@/components/creditos/ModalDetalleCredito.vue'
 import { fetchPlanesPago } from '@/api/planes_pago'
 import { useAuthStore } from '@/stores/authStore'
-import ModalDetalleCredito from '@/components/creditos/ModalDetalleCredito.vue'
 
 interface PlanPago {
   id: number
@@ -30,54 +30,62 @@ interface PlanPago {
 
 const authStore = useAuthStore()
 
-const planes = ref<PlanPago[]>([])
-const page = ref(1)
-const lastPage = ref(1)
-const loading = ref(false)
-const filtroEstado = ref('activo')
+const planes       = ref<PlanPago[]>([])
+const page         = ref(1)
+const lastPage     = ref(1)
+const totalItems   = ref(0)
+const startIndex   = ref(0)
+const endIndex     = ref(0)
+const loading      = ref(false)
+
 const planSeleccionado = ref<PlanPago | null>(null)
 
-function etiquetaPlazo(plan: PlanPago): string {
-  const n = plan.num_plazos
-  if (plan.tipo_plazo === 'dias') {
-    if (plan.intervalo_dias) {
-      // plan nuevo: tiene intervalo y num_plazos separados
-      return `${n} pago${n > 1 ? 's' : ''} (cada ${plan.intervalo_dias} dias)`
-    }
-    // plan antiguo: no tenia intervalo_dias, num_plazos era el intervalo
-    return `Cada ${n} dias (plazos sin limite)`
-  } else if (plan.tipo_plazo === 'semanal') {
-    return `${n} pago${n > 1 ? 's' : ''} semanal${n > 1 ? 'es' : ''}`
-  } else if (plan.tipo_plazo === 'mensual') {
-    return `${n} pago${n > 1 ? 's' : ''} mensual${n > 1 ? 'es' : ''}`
-  }
-  return `${n} ${plan.tipo_plazo}`
-}
+const filtros = ref({
+  search:      '',
+  estado:      '',
+  fecha_desde: '',
+  fecha_hasta: '',
+})
 
-// buscador de cliente
-const searchCliente = ref('')
-let searchTimeout: ReturnType<typeof setTimeout> | undefined = undefined
-
-const opcionesEstado = [
-  { value: 'activo',    label: 'Activos' },
-  { value: 'liquidado', label: 'Liquidados' },
-  { value: 'vencido',   label: 'Vencidos' },
-  { value: '',          label: 'Todos' },
-]
-
-watch(filtroEstado, () => {
+watch(filtros, () => {
   page.value = 1
   loadPlanes()
-})
+}, { deep: true })
 
-// busqueda con debounce para no hacer peticiones en cada tecla
-watch(searchCliente, () => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    page.value = 1
-    loadPlanes()
-  }, 350)
-})
+const columns = [
+  { key: 'cliente',          label: 'Cliente' },
+  { key: 'venta',            label: 'Venta' },
+  { key: 'total_a_pagar',    label: 'Total' },
+  { key: 'cuota',            label: 'Cuota' },
+  { key: 'saldo_pendiente',  label: 'Saldo' },
+  { key: 'fecha_proximo_pago', label: 'Proximo pago' },
+  { key: 'plazo',            label: 'Plazo' },
+  { key: 'estado',           label: 'Estado' },
+]
+
+// dropdown de acciones
+const dropdownAbierto = ref<number | string | null>(null)
+const dropdownRefs    = ref<Record<string, HTMLElement | null>>({})
+
+function setDropdownRef(el: any, id: number | string) {
+  if (el) dropdownRefs.value[id] = el
+}
+
+function toggleDropdown(id: number | string) {
+  dropdownAbierto.value = dropdownAbierto.value === id ? null : id
+}
+
+function cerrarDropdown() {
+  dropdownAbierto.value = null
+}
+
+function onClickFuera(e: MouseEvent) {
+  if (dropdownAbierto.value === null) return
+  const ref = dropdownRefs.value[dropdownAbierto.value]
+  if (ref && !ref.contains(e.target as Node)) {
+    cerrarDropdown()
+  }
+}
 
 watch(
   () => authStore.establishmentActive,
@@ -89,38 +97,80 @@ watch(
 )
 
 onMounted(async () => {
+  document.addEventListener('click', onClickFuera)
   await loadPlanes()
 })
 
-const loadPlanes = async () => {
+onUnmounted(() => {
+  document.removeEventListener('click', onClickFuera)
+})
+
+const loadPlanes = async (p = 1) => {
   loading.value = true
   try {
     const res = await fetchPlanesPago({
-      page: page.value,
-      estado: filtroEstado.value || undefined,
-      search: searchCliente.value || undefined,
-      per_page: 10
+      page:        p,
+      estado:      filtros.value.estado || undefined,
+      search:      filtros.value.search || undefined,
+      fecha_desde: filtros.value.fecha_desde || undefined,
+      fecha_hasta: filtros.value.fecha_hasta || undefined,
+      per_page:    10
     })
-    planes.value = res.data
-    lastPage.value = res.last_page
-    page.value = res.current_page
+    planes.value     = res.data
+    lastPage.value   = res.last_page
+    page.value       = res.current_page
+    totalItems.value = res.total
+    startIndex.value = (res.from ?? 1) - 1
+    endIndex.value   = (res.to ?? 1) - 1
   } finally {
     loading.value = false
   }
 }
 
-function verDetalle(plan: PlanPago) {
+const paginate = (p: number) => loadPlanes(p)
+const nextPage = () => { if (page.value < lastPage.value) loadPlanes(page.value + 1) }
+const prevPage = () => { if (page.value > 1) loadPlanes(page.value - 1) }
+
+function verDetalle(plan: any) {
   planSeleccionado.value = plan
 }
 
 async function onAbonado() {
-  // refrescamos la lista y cerramos el modal con datos actualizados
-  await loadPlanes()
-  // actualizamos el plan en el modal con los datos frescos
+  await loadPlanes(page.value)
   if (planSeleccionado.value) {
     const planActualizado = planes.value.find(p => p.id === planSeleccionado.value!.id)
     if (planActualizado) planSeleccionado.value = planActualizado
   }
+}
+
+// helpers de formato
+function nombreCliente(plan: any) {
+  return `${plan.cliente?.nombre ?? ''} ${plan.cliente?.apellido_p ?? ''}`.trim()
+}
+
+function etiquetaPlazo(plan: any): string {
+  const n = plan.num_plazos
+  if (plan.tipo_plazo === 'dias') {
+    if (plan.intervalo_dias) {
+      return `${n} pago${n > 1 ? 's' : ''} (cada ${plan.intervalo_dias} dias)`
+    }
+    return `Cada ${n} dias`
+  } else if (plan.tipo_plazo === 'semanal') {
+    return `${n} pago${n > 1 ? 's' : ''} semanal${n > 1 ? 'es' : ''}`
+  } else if (plan.tipo_plazo === 'mensual') {
+    return `${n} pago${n > 1 ? 's' : ''} mensual${n > 1 ? 'es' : ''}`
+  }
+  return `${n} ${plan.tipo_plazo}`
+}
+
+function formatFecha(fecha: string) {
+  if (!fecha) return '—'
+  const date = new Date(fecha)
+  if (isNaN(date.getTime())) return fecha
+  return date.toLocaleDateString('es-MX', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    timeZone: 'America/Mexico_City'
+  })
 }
 
 function etiquetaEstado(estado: string) {
@@ -133,19 +183,11 @@ function etiquetaEstado(estado: string) {
   return map[estado] ?? 'bg-gray-100 text-gray-600'
 }
 
-function nombreCliente(plan: PlanPago) {
-  return `${plan.cliente?.nombre ?? ''} ${plan.cliente?.apellido_p ?? ''}`.trim()
-}
-
-// formato de fecha con zona horaria de Mexico
-function formatFecha(fecha: string) {
-  if (!fecha) return '—'
-  const date = new Date(fecha)
-  if (isNaN(date.getTime())) return fecha
-  return date.toLocaleDateString('es-MX', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    timeZone: 'America/Mexico_City'
-  })
+function calcularCuota(plan: any): string {
+  const total = Number(plan.total_financiado)
+  const plazos = Number(plan.num_plazos)
+  if (plazos <= 0 || total <= 0) return '$0.00'
+  return '$' + Math.floor(total / plazos).toFixed(2)
 }
 </script>
 
@@ -154,150 +196,188 @@ function formatFecha(fecha: string) {
 
   <div class="p-4">
 
-    <!-- filtros y buscador -->
-    <div class="flex flex-col sm:flex-row gap-3 mb-5">
-      <!-- filtros de estado -->
-      <div class="flex gap-2 flex-wrap">
-        <button
-          v-for="op in opcionesEstado"
-          :key="op.value"
-          @click="filtroEstado = op.value"
-          :class="[
-            'px-4 py-1.5 rounded-full text-sm font-medium border transition',
-            filtroEstado === op.value
-              ? 'bg-green-600 text-white border-green-600'
-              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-          ]"
-        >
-          {{ op.label }}
-        </button>
-      </div>
+    <!-- filtros -->
+    <div class="flex flex-wrap gap-3 mb-4">
 
-      <!-- buscador de cliente -->
-      <div class="relative sm:ml-auto w-full sm:w-72">
+      <!-- buscar por cliente -->
+      <div class="relative">
         <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-          <i class="fa-solid fa-search text-gray-400 text-sm"></i>
+          <i class="fa-solid fa-user text-gray-400 text-xs"></i>
         </span>
         <input
-          v-model="searchCliente"
+          v-model="filtros.search"
           type="text"
-          class="block w-full pl-9 pr-4 py-1.5 rounded-full border border-gray-300 dark:border-gray-600
-                 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                 placeholder-gray-400 dark:placeholder-gray-500
-                 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-400
-                 transition text-sm"
           placeholder="Buscar cliente..."
+          class="block pl-9 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
+                bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                focus:ring-1 focus:ring-green-400 transition text-sm"
+          autocomplete="off"
         />
-        <!-- boton para limpiar busqueda -->
-        <button
-          v-if="searchCliente"
-          @click="searchCliente = ''"
-          class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-        >
-          <i class="fa-solid fa-xmark text-xs"></i>
-        </button>
       </div>
+
+      <!-- filtro por estado -->
+      <div class="relative">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+          <i class="fa-solid fa-filter text-gray-400 text-xs"></i>
+        </span>
+        <select
+          v-model="filtros.estado"
+          class="block pl-9 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
+                bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                focus:ring-1 focus:ring-green-400 transition text-sm"
+        >
+          <option value="">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="liquidado">Liquidado</option>
+          <option value="vencido">Vencido</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+
+      <!-- fecha desde -->
+      <div class="relative">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+          <i class="fa-solid fa-calendar-days text-gray-400 text-xs"></i>
+        </span>
+        <input
+          v-model="filtros.fecha_desde"
+          type="date"
+          @click="($event.target as HTMLInputElement).showPicker()"
+          class="block pl-9 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
+                bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                focus:ring-1 focus:ring-green-400 transition text-sm"
+        />
+      </div>
+
+      <!-- fecha hasta -->
+      <div class="relative">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+          <i class="fa-solid fa-calendar-days text-gray-400 text-xs"></i>
+        </span>
+        <input
+          v-model="filtros.fecha_hasta"
+          type="date"
+          @click="($event.target as HTMLInputElement).showPicker()"
+          class="block pl-9 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
+                bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                focus:ring-1 focus:ring-green-400 transition text-sm"
+        />
+      </div>
+
+      <!-- limpiar filtros -->
+      <button
+        class="flex items-center gap-1.5 px-3 py-1.5
+              text-xs font-medium bg-primary text-white border border-primary
+              rounded-lg shadow-sm hover:bg-transparent hover:text-primary
+              transition whitespace-nowrap"
+        @click="filtros = { search: '', estado: '', fecha_desde: '', fecha_hasta: '' }; loadPlanes()"
+      >
+        <i class="fa-solid fa-xmark mr-1 text-[11px]"></i>
+        Limpiar Filtros
+      </button>
     </div>
 
     <!-- tabla -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs">
-          <tr>
-            <th class="px-4 py-3 text-left">Cliente</th>
-            <th class="px-4 py-3 text-left">Venta</th>
-            <th class="px-4 py-3 text-right">Total</th>
-            <th class="px-4 py-3 text-right">Cuota</th>
-            <th class="px-4 py-3 text-right">Saldo</th>
-            <th class="px-4 py-3 text-left">Proximo pago</th>
-            <th class="px-4 py-3 text-left">Plazo</th>
-            <th class="px-4 py-3 text-center">Estado</th>
-            <th class="px-4 py-3 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="loading">
-            <td colspan="9" class="px-4 py-8 text-center text-gray-400">Cargando...</td>
-          </tr>
-          <tr v-else-if="!planes.length">
-            <td colspan="9" class="px-4 py-8 text-center text-gray-400">
-              <i class="fa-regular fa-face-sad-tear text-lg"></i>
-              <p v-if="searchCliente">No se encontraron creditos para "{{ searchCliente }}"</p>
-              <p v-else>No hay creditos registrados</p>
-            </td>
-          </tr>
-          <tr
-            v-for="plan in planes"
-            :key="plan.id"
-            class="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+    <DataTable
+      :items="planes"
+      :columns="columns"
+      :currentPage="page"
+      :totalPages="lastPage"
+      :total="totalItems"
+      :startIndex="startIndex"
+      :endIndex="endIndex"
+      :paginate="paginate"
+      :nextPage="nextPage"
+      :prevPage="prevPage"
+    >
+      <!-- celdas personalizadas -->
+      <template #cell="{ item, column, value }">
+
+        <!-- cliente: nombre + telefono -->
+        <template v-if="column.key === 'cliente'">
+          <span class="font-medium text-gray-800 dark:text-gray-100">
+            {{ nombreCliente(item) }}
+          </span>
+          <span class="block text-xs text-gray-400">{{ item.cliente?.telefono1 }}</span>
+        </template>
+
+        <!-- venta -->
+        <template v-else-if="column.key === 'venta'">
+          #{{ item.venta?.id }}
+        </template>
+
+        <!-- total a pagar -->
+        <template v-else-if="column.key === 'total_a_pagar'">
+          <span class="font-medium">${{ Number(value).toFixed(2) }}</span>
+        </template>
+
+        <!-- cuota calculada -->
+        <template v-else-if="column.key === 'cuota'">
+          <span class="text-green-600 font-medium">{{ calcularCuota(item) }}</span>
+        </template>
+
+        <!-- saldo pendiente -->
+        <template v-else-if="column.key === 'saldo_pendiente'">
+          <span
+            class="font-bold"
+            :class="Number(value) > 0 ? 'text-orange-500' : 'text-green-600'"
           >
-            <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
-              {{ nombreCliente(plan) }}
-              <span class="block text-xs text-gray-400">{{ plan.cliente?.telefono1 }}</span>
-            </td>
-            <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
-              #{{ plan.venta?.id }}
-            </td>
-            <td class="px-4 py-3 text-right font-medium">
-              ${{ Number(plan.total_a_pagar).toFixed(2) }}
-            </td>
-            <td class="px-4 py-3 text-right text-green-600 font-medium">
-              ${{ Math.floor(Number(plan.total_financiado) / Number(plan.num_plazos)).toFixed(2) }}
-            </td>
-            <td class="px-4 py-3 text-right font-bold"
-              :class="Number(plan.saldo_pendiente) > 0 ? 'text-orange-500' : 'text-green-600'"
-            >
-              ${{ Number(plan.saldo_pendiente).toFixed(2) }}
-            </td>
-            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">
-              {{ formatFecha(plan.fecha_proximo_pago) }}
-            </td>
-            <td class="px-4 py-3 text-gray-500 dark:text-gray-400 capitalize">
-              {{ etiquetaPlazo(plan) }}
-            </td>
-            <td class="px-4 py-3 text-center">
-              <span :class="['px-2 py-1 rounded-full text-xs font-medium capitalize', etiquetaEstado(plan.estado)]">
-                {{ plan.estado }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-center">
+            ${{ Number(value).toFixed(2) }}
+          </span>
+        </template>
+
+        <!-- fecha proximo pago -->
+        <template v-else-if="column.key === 'fecha_proximo_pago'">
+          {{ formatFecha(value) }}
+        </template>
+
+        <!-- plazo -->
+        <template v-else-if="column.key === 'plazo'">
+          <span class="capitalize">{{ etiquetaPlazo(item) }}</span>
+        </template>
+
+        <!-- estado -->
+        <template v-else-if="column.key === 'estado'">
+          <span :class="['px-2 py-1 rounded-full text-xs font-medium capitalize', etiquetaEstado(item.estado)]">
+            {{ item.estado }}
+          </span>
+        </template>
+
+        <!-- cualquier otra columna -->
+        <template v-else>
+          {{ value ?? '--' }}
+        </template>
+      </template>
+
+      <!-- acciones -->
+      <template #actions="{ item }">
+        <div class="relative flex justify-center" :ref="el => setDropdownRef(el, item.id)">
+          <button
+            class="cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            @click="toggleDropdown(item.id)"
+          >
+            <i class="fa-solid fa-ellipsis-vertical text-gray-500"></i>
+          </button>
+
+          <ul
+            v-show="dropdownAbierto === item.id"
+            class="absolute right-full mr-1 border text-sm z-30 dark:border-gray-600
+                   min-w-[170px] p-1.5 rounded-md bg-white dark:bg-gray-800 shadow-lg"
+          >
+            <li>
               <button
-                class="w-8 h-8 flex items-center justify-center rounded-full mx-auto
-                       bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300
-                       hover:bg-blue-200 transition"
-                @click="verDetalle(plan)"
-                title="Ver detalle"
+                @click="verDetalle(item); cerrarDropdown()"
+                class="py-2 w-full text-left hover:bg-blue-50 dark:hover:bg-gray-700
+                       rounded-md duration-300 px-3 flex items-center gap-2 text-blue-600 dark:text-blue-400"
               >
                 <i class="fa-solid fa-eye text-xs"></i>
+                Ver detalle
               </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- paginacion -->
-    <div class="flex justify-center items-center gap-3 mt-6 select-none">
-      <button @click="page--; loadPlanes()" :disabled="page <= 1" class="btn">
-        <IconChevronLeft />
-      </button>
-      <div class="flex gap-2">
-        <button
-          v-for="num in lastPage"
-          :key="num"
-          @click="page = num; loadPlanes()"
-          :class="['btn', page === num
-            ? 'border-green-600 text-white shadow-lg scale-110'
-            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
-          ]"
-        >
-          {{ num }}
-        </button>
-      </div>
-      <button @click="page++; loadPlanes()" :disabled="page >= lastPage" class="btn">
-        <IconChevronRight />
-      </button>
-    </div>
+            </li>
+          </ul>
+        </div>
+      </template>
+    </DataTable>
 
   </div>
 

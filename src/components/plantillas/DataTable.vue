@@ -77,30 +77,36 @@ function getValue(obj: any, path: string) {
             class="even:bg-primary/5 dark:even:bg-bg3"
           >
 
-            <!-- Columnas dinámicas -->
+            <!-- Columnas dinamicas -->
             <td
               v-for="col in columns"
               :key="col.key"
               class="px-4 py-2 text-xs"
             >
-              
-              <!-- Render especial para estado -->
-              <template v-if="col.key === 'state'">
-              <span
-          :class="item.state === 1 || item.state === 'activo'
-            ? 'bg-secondary4/5 text-secondary4' 
-            : 'bg-secondary2/5 text-secondary2'"
-          class="inline-block text-xs px-3 py-1 text-center rounded-full border"
-        >
-          {{ item.state === 1 || item.state === 'activo' ? 'Activo' : 'Inactivo' }}
-        </span>
+              <!-- slot personalizado de celda si existe -->
+              <template v-if="slots.cell">
+                <slot name="cell" :item="item" :column="col" :value="getValue(item, col.key)" />
               </template>
 
-              <!-- Render normal -->
+              <!-- render por defecto -->
               <template v-else>
-                {{ getValue(item, col.key) ?? '--' }}
-              </template>
+                <!-- Render especial para estado -->
+                <template v-if="col.key === 'state'">
+                  <span
+                    :class="item.state === 1 || item.state === 'activo'
+                      ? 'bg-secondary4/5 text-secondary4' 
+                      : 'bg-secondary2/5 text-secondary2'"
+                    class="inline-block text-xs px-3 py-1 text-center rounded-full border"
+                  >
+                    {{ item.state === 1 || item.state === 'activo' ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </template>
 
+                <!-- Render normal -->
+                <template v-else>
+                  {{ getValue(item, col.key) ?? '--' }}
+                </template>
+              </template>
             </td>
 
             <!-- Acciones -->

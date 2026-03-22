@@ -385,71 +385,103 @@ function colorStatus(status: string) {
       :nextPage="nextPage"
       :prevPage="prevPage"
     >
-<template #actions="{ item, index }">
-  <div class="relative flex justify-center" :ref="el => setDropdownRef(el, item.id)">
-    <button
-      class="cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-      @click="toggleDropdown(item.id)"
-    >
-      <i class="fa-solid fa-ellipsis-vertical text-gray-500"></i>
-    </button>
+      <!-- celdas personalizadas -->
+      <template #cell="{ item, column, value }">
 
-    <ul
-      v-show="dropdownAbierto === item.id"
-      class="absolute right-full mr-1 border text-sm z-30 dark:border-gray-600
-             min-w-[170px] p-1.5 rounded-md bg-white dark:bg-gray-800 shadow-lg"
-      :class="{ 'bottom-0': index >= cotizaciones.length - 2 }"
-    >
-      <!-- ver ticket cotizacion (siempre) -->
-      <li>
-        <button
-          @click="verTicket(item); cerrarDropdown()"
-          class="py-2 w-full text-left hover:bg-blue-50 dark:hover:bg-gray-700
-                 rounded-md duration-300 px-3 flex items-center gap-2 text-blue-600 dark:text-blue-400"
-        >
-          <i class="fa-solid fa-receipt text-xs"></i>
-          Ticket COT
-        </button>
-      </li>
+        <!-- total formateado -->
+        <template v-if="column.key === 'total'">
+          <span class="font-medium">${{ Number(value).toFixed(2) }}</span>
+        </template>
 
-      <!-- ver ticket venta (solo si vendido) -->
-      <li v-if="item.status === 'vendido' && item.venta_id">
-        <button
-          @click="verTicketVenta(item); cerrarDropdown()"
-          class="py-2 w-full text-left hover:bg-green-50 dark:hover:bg-gray-700
-                 rounded-md duration-300 px-3 flex items-center gap-2 text-green-600 dark:text-green-400"
-        >
-          <i class="fa-solid fa-file-invoice-dollar text-xs"></i>
-          Ticket VTA
-        </button>
-      </li>
+        <!-- status con badge -->
+        <template v-else-if="column.key === 'status'">
+          <span :class="['px-2 py-1 rounded-full text-xs font-medium capitalize', colorStatus(item.status)]">
+            {{ item.status }}
+          </span>
+        </template>
 
-      <!-- comprobar (solo pendiente) -->
-      <li v-if="item.status === 'pendiente'">
-        <button
-          @click="abrirComprobar(item); cerrarDropdown()"
-          class="py-2 w-full text-left hover:bg-orange-50 dark:hover:bg-gray-700
-                 rounded-md duration-300 px-3 flex items-center gap-2 text-orange-600 dark:text-orange-400"
-        >
-          <i class="fa-solid fa-boxes-stacked text-xs"></i>
-          Comprobar
-        </button>
-      </li>
+        <!-- folio venta -->
+        <template v-else-if="column.key === 'venta_folio'">
+          <span v-if="value" class="text-green-600 font-medium">{{ value }}</span>
+          <span v-else class="text-gray-400">—</span>
+        </template>
 
-      <!-- cancelar (solo pendiente) -->
-      <li v-if="item.status === 'pendiente'">
-        <button
-          @click="confirmarCancelar(Number(item.id)); cerrarDropdown()"
-          class="py-2 w-full text-left hover:bg-red-50 dark:hover:bg-gray-700
-                 rounded-md duration-300 px-3 flex items-center gap-2 text-red-600 dark:text-red-400"
-        >
-          <i class="fa-solid fa-ban text-xs"></i>
-          Cancelar
-        </button>
-      </li>
-    </ul>
-  </div>
-</template>
+        <!-- notas truncadas -->
+        <template v-else-if="column.key === 'notas'">
+          <span v-if="value" class="truncate block max-w-[150px]" :title="value">{{ value }}</span>
+          <span v-else class="text-gray-400">—</span>
+        </template>
+
+        <!-- cualquier otra columna -->
+        <template v-else>
+          {{ value ?? '--' }}
+        </template>
+      </template>
+      <template #actions="{ item, index }">
+        <div class="relative flex justify-center" :ref="el => setDropdownRef(el, item.id)">
+          <button
+            class="cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            @click="toggleDropdown(item.id)"
+          >
+            <i class="fa-solid fa-ellipsis-vertical text-gray-500"></i>
+          </button>
+
+          <ul
+            v-show="dropdownAbierto === item.id"
+            class="absolute right-full mr-1 border text-sm z-30 dark:border-gray-600
+                  min-w-[170px] p-1.5 rounded-md bg-white dark:bg-gray-800 shadow-lg"
+            :class="{ 'bottom-0': index >= cotizaciones.length - 2 }"
+          >
+            <!-- ver ticket cotizacion (siempre) -->
+            <li>
+              <button
+                @click="verTicket(item); cerrarDropdown()"
+                class="py-2 w-full text-left hover:bg-blue-50 dark:hover:bg-gray-700
+                      rounded-md duration-300 px-3 flex items-center gap-2 text-blue-600 dark:text-blue-400"
+              >
+                <i class="fa-solid fa-receipt text-xs"></i>
+                Ticket COT
+              </button>
+            </li>
+
+            <!-- ver ticket venta (solo si vendido) -->
+            <li v-if="item.status === 'vendido' && item.venta_id">
+              <button
+                @click="verTicketVenta(item); cerrarDropdown()"
+                class="py-2 w-full text-left hover:bg-green-50 dark:hover:bg-gray-700
+                      rounded-md duration-300 px-3 flex items-center gap-2 text-green-600 dark:text-green-400"
+              >
+                <i class="fa-solid fa-file-invoice-dollar text-xs"></i>
+                Ticket VTA
+              </button>
+            </li>
+
+            <!-- comprobar (solo pendiente) -->
+            <li v-if="item.status === 'pendiente'">
+              <button
+                @click="abrirComprobar(item); cerrarDropdown()"
+                class="py-2 w-full text-left hover:bg-orange-50 dark:hover:bg-gray-700
+                      rounded-md duration-300 px-3 flex items-center gap-2 text-orange-600 dark:text-orange-400"
+              >
+                <i class="fa-solid fa-boxes-stacked text-xs"></i>
+                Comprobar
+              </button>
+            </li>
+
+            <!-- cancelar (solo pendiente) -->
+            <li v-if="item.status === 'pendiente'">
+              <button
+                @click="confirmarCancelar(Number(item.id)); cerrarDropdown()"
+                class="py-2 w-full text-left hover:bg-red-50 dark:hover:bg-gray-700
+                      rounded-md duration-300 px-3 flex items-center gap-2 text-red-600 dark:text-red-400"
+              >
+                <i class="fa-solid fa-ban text-xs"></i>
+                Cancelar
+              </button>
+            </li>
+          </ul>
+        </div>
+      </template>
     </DataTable>
 
   </div>
