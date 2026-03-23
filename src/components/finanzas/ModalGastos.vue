@@ -117,8 +117,8 @@ const guardar = async () => {
     emit("saved")
 
   } catch (e: any) {
-    const mensaje = e?.response?.data?.message
-      || e?.response?.data?.data
+    const mensaje = e?.response?.data?.data
+      || e?.response?.data?.message
       || 'Error al guardar el gasto.'
 
     Swal.fire({

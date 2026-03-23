@@ -432,11 +432,12 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
       ? Object.values(errores).flat().join('\n')
       : e?.response?.data?.message || e?.message || 'No se pudo registrar la venta.'
 
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: mensaje
-    })
+  Swal.fire({
+    icon: 'error',
+    title: 'Error',
+    text: mensaje,
+    confirmButtonColor: '#3b82f6'
+  })
   }
 }
 
@@ -499,9 +500,9 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
     const errores = e?.response?.data?.errors
     const mensaje = errores
       ? Object.values(errores).flat().join('\n')
-      : e?.response?.data?.message || e?.message || 'No se pudo registrar la cotizacion.'
+      : e?.response?.data?.data || e?.response?.data?.message || 'No se pudo registrar la cotizacion.'
 
-    Swal.fire({ icon: 'error', title: 'Error', text: mensaje })
+    Swal.fire({ icon: 'error', title: 'Error', text: mensaje, confirmButtonColor: '#3b82f6' })
   }
 }
 </script>
