@@ -20,6 +20,9 @@ const endIndex     = ref(0)
 const loading        = ref(false)
 const configuracion  = ref<any>(null)
 
+// descargar ticket de venta realizada
+const descargarTicket = ref(false)
+
 // modal ticket cotizacion
 const showModalTicket = ref(false)
 const ticketData      = ref<any>(null)
@@ -135,6 +138,7 @@ const nextPage  = () => { if (page.value < lastPage.value) cargarCotizaciones(pa
 const prevPage  = () => { if (page.value > 1) cargarCotizaciones(page.value - 1) }
 
 async function verTicket(cotizacion: any) {
+  descargarTicket.value = false
   try {
     Swal.fire({
       title: 'Cargando ticket...',
@@ -210,8 +214,9 @@ function onVentaRealizada(ticket?: any) {
 
   // si viene el ticket de venta lo mostramos
   if (ticket) {
-    ticketData.value      = ticket
-    showModalTicket.value = true
+    descargarTicket.value = true
+    ticketVentaData.value = ticket
+    showModalTicketVenta.value = true
   }
 }
 
@@ -504,6 +509,7 @@ function colorStatus(status: string) {
     :impresora_ancho="configuracion?.impresora_ancho ?? 80"
     :impresora_alto="configuracion?.impresora_alto ?? 200"
     @close="showModalTicketVenta = false"
+    :auto-descargar="descargarTicket"
   />
 
   <!-- modal comprobar stock y convertir -->

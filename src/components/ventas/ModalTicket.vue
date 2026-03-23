@@ -253,6 +253,7 @@ const props = defineProps<{
   tipo?: 'venta' | 'cotizacion'
   impresora_ancho?: number
   impresora_alto?: number
+  autoDescargar?: boolean
 }>()
 
 // si no se pasa tipo, se determina por los datos del ticket
@@ -281,9 +282,11 @@ const baseGravable = computed(() => {
 onMounted(() => {
     // el logo ya viene como base64 desde el backend
     // esperamos a que el DOM este listo antes de descargar
-    setTimeout(() => {
-        descargarPDF()
-    }, 300)
+    if (props.autoDescargar === true){
+      setTimeout(() => {
+          descargarPDF()
+      }, 300)
+    }
 })
 
 function imprimir() {

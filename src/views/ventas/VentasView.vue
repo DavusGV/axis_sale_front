@@ -664,6 +664,7 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
       :impresora_ancho="configuracion?.impresora_ancho ?? 80"
       :impresora_alto="configuracion?.impresora_alto ?? 200"
       @close="showModalTicket = false"
+      :auto-descargar="true"
     />
 
     <!-- Modal precio servicio -->
