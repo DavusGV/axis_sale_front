@@ -40,11 +40,23 @@ const loading      = ref(false)
 
 const planSeleccionado = ref<PlanPago | null>(null)
 
+function getMonthRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    desde: start.toISOString().slice(0, 10),
+    hasta: end.toISOString().slice(0, 10),
+  }
+}
+
+const rango = getMonthRange()
+
 const filtros = ref({
   search:      '',
   estado:      '',
-  fecha_desde: '',
-  fecha_hasta: '',
+  fecha_desde: rango.desde,
+  fecha_hasta: rango.hasta,
 })
 
 watch(filtros, () => {
@@ -270,7 +282,7 @@ function calcularCuota(plan: any): string {
               text-xs font-medium bg-primary text-white border border-primary
               rounded-lg shadow-sm hover:bg-transparent hover:text-primary
               transition whitespace-nowrap"
-        @click="filtros = { search: '', estado: '', fecha_desde: '', fecha_hasta: '' }; loadPlanes()"
+        @click="filtros = { search: '', estado: '', fecha_desde: getMonthRange().desde, fecha_hasta: getMonthRange().hasta }; loadPlanes()"
       >
         <i class="fa-solid fa-xmark mr-1 text-[11px]"></i>
         Limpiar Filtros

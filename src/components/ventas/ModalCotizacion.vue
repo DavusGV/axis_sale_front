@@ -218,7 +218,7 @@ interface Cliente {
 const busquedaCliente     = ref('')
 const resultadosClientes  = ref<Cliente[]>([])
 const clienteSeleccionado = ref<Cliente | null>(null)
-const expiresAt           = ref('')
+const expiresAt           = ref(new Date().toISOString().split('T')[0])
 const notas               = ref('')
 const cargando            = ref(false)
 

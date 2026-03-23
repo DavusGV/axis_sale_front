@@ -107,13 +107,25 @@ async function cargarCotizaciones(p = 1) {
   }
 }
 
+function getMonthRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    desde: start.toISOString().slice(0, 10),
+    hasta: end.toISOString().slice(0, 10),
+  }
+}
+
+const rango = getMonthRange()
+
 // filtros de busqueda
 const filtros = ref({
   search:      '',
   status:      '',
   cliente:     '',
-  fecha_desde: '',
-  fecha_hasta: '',
+  fecha_desde: rango.desde,
+  fecha_hasta: rango.hasta,
 })
 
 // recarga al cambiar cualquier filtro
@@ -371,7 +383,7 @@ function colorStatus(status: string) {
             rounded-lg shadow-sm
             hover:bg-transparent hover:text-primary
             transition whitespace-nowrap"
-        @click="filtros = { search: '', status: '', cliente: '', fecha_desde: '', fecha_hasta: '' }; cargarCotizaciones()"
+        @click="filtros = { search: '', status: '', cliente: '', fecha_desde: getMonthRange().desde, fecha_hasta: getMonthRange().hasta }; cargarCotizaciones()"
       >
         <i class="fa-solid fa-xmark mr-1 text-[11px]"></i>
           Limpiar Filtros
