@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useSlots } from 'vue'
 import Pagination from '../shared/Pagination.vue'
 
 interface Column {
@@ -11,6 +12,8 @@ interface Item {
   state?: number | string
   [key: string]: any
 }
+
+const slots = useSlots()
 
 const props = defineProps<{
   items: Item[]

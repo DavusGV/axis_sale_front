@@ -56,6 +56,7 @@ export const sidebarData = [
                     { title: "Ventas", url: "/ventas/ventas" },
                     { title: "Clientes", url: "/clientes" },
                     { title: "Creditos", url: "/credito" },
+                    { title: "Cotizacion", url: '/cotizacion', },
                     { title: "Configuracion", url: '/configuracion/establecimiento', },
                 ],
             },
@@ -64,6 +65,7 @@ export const sidebarData = [
                 name: "Finanzas",
                 icon: IconCoins,
                 submenus: [
+                    { title: "Historial Ventas", url: '/ventas/historial', },
                     { title: "Tipo de Gasto", url: "/finanzas/tipogastos" },
                     { title: "Gastos", url: "/finanzas/gastos" },
                     { title: "Ingresos", url: "/finanzas/ingresos" },

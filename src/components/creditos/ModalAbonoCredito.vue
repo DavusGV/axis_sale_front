@@ -375,8 +375,9 @@ async function seleccionarCliente(cliente: Cliente) {
   loadingPlanes.value = true
   try {
     const res = await fetchPlanesPorCliente(cliente.id)
-    // el endpoint devuelve paginacion, los planes estan en res.data
-    planesCliente.value = res.data ?? res ?? []
+    // filtramos los cancelados y liquidados, solo mostramos planes con saldo
+    const todos = res.data ?? res ?? []
+    planesCliente.value = todos.filter((p: any) => p.estado === 'activo' || p.estado === 'vencido')
   } finally {
     loadingPlanes.value = false
   }

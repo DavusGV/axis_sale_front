@@ -14,6 +14,8 @@ import Swal from 'sweetalert2'
 import ModalAbono from '@/components/creditos/ModalAbonoCredito.vue'
 import ModalTicket from '@/components/ventas/ModalTicket.vue'
 import ModalPrecioServicio from '@/components/ventas/ModalPrecioServicio.vue'
+import ModalCotizacion from '@/components/ventas/ModalCotizacion.vue'
+import { registrarCotizacion, fetchTicketCotizacion } from '@/api/cotizaciones'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
@@ -23,6 +25,10 @@ const carrito = ref<any[]>([])
 const page = ref(1)
 const lastPage = ref(1)
 const configuracion = ref<any>(null)
+
+// variables para el flujo de cotizacion
+const showModalCotizacion = ref(false)
+const cotizacionData      = ref<any>(null)
 
 // El total se recalcula dinamicamente usando descuento y tipo_descuento
 // para que al cambiar la cantidad el descuento se ajuste correctamente
@@ -103,7 +109,17 @@ onMounted(async () => {
   try {
     configuracion.value = await fetchConfiguracion()
   } catch {
-  }
+      // si falla se usaran valores por defecto de forma que no interrumpa el flujo
+      Swal.fire({
+        icon: 'warning',
+        title: 'Configuración no disponible',
+        text: 'Se usarán valores por defecto',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000
+      })
+    }
 })
 
 onUnmounted(() => {
@@ -295,6 +311,22 @@ function abrirModalPago() {
   showModalPago.value = true
 }
 
+function abrirModalCotizacion() {
+  if (!carrito.value.length) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Carrito vacio',
+      text: 'Agrega productos al carrito primero',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000
+    })
+    return
+  }
+  showModalCotizacion.value = true
+}
+
 function abrirDescuentoProducto(producto_id: number) {
   const item = carrito.value.find(i => i.producto_id === producto_id)
   if (!item) return
@@ -405,6 +437,71 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
       title: 'Error',
       text: mensaje
     })
+  }
+}
+
+async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) {
+  const user       = JSON.parse(localStorage.getItem('user') || '{}')
+  const usuario_id = user.id
+
+  const detalles = carrito.value.map(item => {
+    const subtotalBruto = item.precio * item.cantidad
+    let desc_aplicado   = 0
+
+    if (item.tipo_descuento === 'porcentaje') {
+      desc_aplicado = subtotalBruto * ((item.descuento ?? 0) / 100)
+    } else if (item.tipo_descuento === 'monto') {
+      desc_aplicado = (item.descuento ?? 0) * item.cantidad
+    }
+
+    return {
+      producto_id:        item.producto_id,
+      cantidad:           item.cantidad,
+      precio:             item.precio,
+      precio_compra:      item.precio_compra,
+      subtotal:           subtotalBruto,
+      tipo_descuento:     item.tipo_descuento ?? null,
+      descuento:          item.descuento ?? 0,
+      descuento_aplicado: desc_aplicado,
+    }
+  })
+
+  const cotizacion = {
+    usuario_id,
+    cliente_id,
+    expires_at,
+    notas,
+    total: carrito.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0),
+    total_final: total.value,
+    detalles,
+  }
+
+  try {
+    Swal.fire({
+      title: 'Guardando cotizacion...',
+      text: 'Por favor espera',
+      allowOutsideClick: false,
+      didOpen: () => { Swal.showLoading() }
+    })
+
+    const resultado = await registrarCotizacion(cotizacion)
+    carrito.value             = []
+    showModalCotizacion.value = false
+    Swal.close()
+
+    // corrige la estructura de la respuesta
+    const ticket          = await fetchTicketCotizacion(resultado.data.cotizacion.id)
+    ticketData.value      = ticket.data.ticket
+    showModalTicket.value = true
+
+  } catch (e: any) {
+    Swal.close()
+    const errores = e?.response?.data?.errors
+    const mensaje = errores
+      ? Object.values(errores).flat().join('\n')
+      : e?.response?.data?.message || e?.message || 'No se pudo registrar la cotizacion.'
+
+    Swal.fire({ icon: 'error', title: 'Error', text: mensaje })
   }
 }
 </script>
@@ -533,6 +630,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
       <ResumenVenta
         :total="total"
         @pagar="abrirModalPago"
+        @cotizar="abrirModalCotizacion"
       />
     </div>
 
@@ -562,6 +660,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     <ModalTicket
       v-if="showModalTicket && ticketData"
       :ticket="ticketData"
+      :tipo="ticketData?.metodo_pago !== undefined ? 'venta' : 'cotizacion'"
       :impresora_ancho="configuracion?.impresora_ancho ?? 80"
       :impresora_alto="configuracion?.impresora_alto ?? 200"
       @close="showModalTicket = false"
@@ -573,6 +672,12 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
       :producto="productoServicioTemp"
       @close="showModalPrecioServicio = false"
       @confirmar="confirmarPrecioServicio"
+    />
+
+    <ModalCotizacion
+      v-if="showModalCotizacion"
+      @close="showModalCotizacion = false"
+      @confirmar="registrarCotizacionLocal"
     />
   </div>
 </template>
