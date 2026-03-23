@@ -63,20 +63,26 @@ function getValue(obj: any, path: string) {
             <td v-for="col in columns" :key="col.key"
               class="px-4 py-2 text-xs"
             >
-              <!-- estado -->
-              <template v-if="col.key === 'state'">
-                <span
-                  :class="item.state === 1 || item.state === 'activo'
-                    ? 'bg-secondary4/5 text-secondary4'
-                    : 'bg-secondary2/5 text-secondary2'"
-                  class="inline-block text-xs px-3 py-1 text-center rounded-full border"
-                >
-                  {{ item.state === 1 || item.state === 'activo' ? 'Activo' : 'Inactivo' }}
-                </span>
+              <!-- celda perzonalizada -->
+              <template v-if="slots.cell">
+                <slot name="cell" :item="item" :column="col" :value="getValue(item, col.key)" />
               </template>
-
               <template v-else>
-                {{ getValue(item, col.key) ?? '--' }}
+                <!-- estado -->
+                <template v-if="col.key === 'state'">
+                  <span
+                    :class="item.state === 1 || item.state === 'activo'
+                      ? 'bg-secondary4/5 text-secondary4'
+                      : 'bg-secondary2/5 text-secondary2'"
+                    class="inline-block text-xs px-3 py-1 text-center rounded-full border"
+                  >
+                    {{ item.state === 1 || item.state === 'activo' ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </template>
+
+                <template v-else>
+                  {{ getValue(item, col.key) ?? '--' }}
+                </template>
               </template>
 
             </td>
