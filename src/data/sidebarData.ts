@@ -26,6 +26,20 @@ import {
 } from "@tabler/icons-vue";
 export const sidebarData = [
     {
+        id: 0,
+        title: "Dashboard",
+        items: [
+            {
+                id: 0,
+                name: "Dashboard",
+                icon: IconHome2,
+                submenus: [
+                    { title: "Dashboard", url: "/dashboard" },
+                ],
+            }
+        ],
+    },
+    {
         id : 1,
         title: "IAM",
         items: [
@@ -65,7 +79,6 @@ export const sidebarData = [
                 name: "Finanzas",
                 icon: IconCoins,
                 submenus: [
-                    { title: "Historial Ventas", url: '/ventas/historial', },
                     { title: "Tipo de Gasto", url: "/finanzas/tipogastos" },
                     { title: "Gastos", url: "/finanzas/gastos" },
                     { title: "Ingresos", url: "/finanzas/ingresos" },
@@ -77,6 +90,7 @@ export const sidebarData = [
                 name: "Reportes",
                 icon: IconReportAnalytics,
                 submenus: [
+                    { title: "Historial Ventas", url: '/ventas/historial', },
                     { title: "Ventas", url: "/reportes/ventas" },
                     { title: "Creditos", url: "/reportes/creditos" },
                 ],

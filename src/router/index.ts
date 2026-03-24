@@ -34,7 +34,6 @@ import MapOneVue from '@/views/dashboards/MapOne.vue';
 import MapTwoVue from '@/views/dashboards/MapTwo.vue';
 import MessagingViewVue from '@/views/dashboards/MessagingView.vue';
 import PersonalOneVue from '@/views/dashboards/PersonalOne.vue';
-import PersonalThreeVue from '@/views/dashboards/PersonalThree.vue';
 import PersonalTwoVue from '@/views/dashboards/PersonalTwo.vue';
 import SalesViewVue from '@/views/dashboards/SalesView.vue';
 import SoccerViewVue from '@/views/dashboards/SoccerView.vue';
@@ -117,17 +116,12 @@ import ReporteCreditoView from '@/views/reportes/ReporteCreditoView.vue';
 import ConfiguracionView from '@/views/configuracion/Configuracion.View.vue';
 import ContizacionView from '@/views/ventas/ContizacionView.vue';
 import VentasHistorialView from '@/views/ventas/VentasHistorialView.vue';
+import PersonalThreeVue from '@/views/dashboards/PersonalThree.vue';
 
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/',
-      name: 'home',
-      redirect: '/dashboards/personal-1',
-      meta: { requiresAuth: true }
-    },
     {
       path: '/demos',
       name: 'about',
@@ -147,12 +141,6 @@ const router = createRouter({
       path: '/dashboards/personal-2',
       name: 'personal2',
       component: PersonalTwoVue,
-      meta: { requiresAuth: true } 
-    },
-    {
-      path: '/dashboards/personal-3',
-      name: 'personal3',
-      component: PersonalThreeVue,
       meta: { requiresAuth: true } 
     },
     {
@@ -859,6 +847,17 @@ const router = createRouter({
       path: '/Finanzas/balance',
       name: 'Balance',
       component:  BalanceView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/',
+      redirect: '/dashboard',
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/Dashboard',
+      name: 'Dashboard',
+      component: PersonalThreeVue,
       meta: { requiresAuth: true } 
     },
 
