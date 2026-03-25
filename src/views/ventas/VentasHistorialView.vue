@@ -4,7 +4,7 @@ import TopBanner from '@/components/shared/TopBanner.vue'
 import DataTable from '@/components/plantillas/DataTable.vue'
 import ModalTicket from '@/components/ventas/ModalTicket.vue'
 import ModalEditarVenta from '@/components/ventas/ModalEditarVenta.vue'
-import { fetchHistorialVentas, fetchTicket, cancelarVenta } from '@/api/ventas'
+import { fetchHistorialVentas, fetchTicket, cancelarVenta, exportHistorialExcel, exportHistorialPdf } from '@/api/ventas'
 import { fetchConfiguracion } from '@/api/configuracion'
 import Swal from 'sweetalert2'
 
@@ -24,6 +24,9 @@ const ticketData      = ref<any>(null)
 // editar venta
 const showModalEditar = ref(false)
 const ventaActiva     = ref<any>(null)
+
+// exportacion
+const exportando = ref<'excel' | 'pdf' | null>(null)
 
 // dropdown
 const dropdownAbierto = ref<number | string | null>(null)
@@ -201,10 +204,78 @@ async function confirmarCancelar(venta: any) {
     Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la venta.' })
   }
 }
+
 function colorStatus(status: string) {
   if (status === 'vendido')   return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
   if (status === 'cancelada') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
   return 'bg-gray-100 text-gray-600'
+}
+
+// ── Funciones de exportacion ──
+
+function descargarBlob(data: Blob, nombreArchivo: string) {
+  const url = window.URL.createObjectURL(data)
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', nombreArchivo)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+async function descargarExcel() {
+  if (exportando.value) return
+  exportando.value = 'excel'
+  try {
+    const res = await exportHistorialExcel({
+      desde:  filtros.value.desde,
+      hasta:  filtros.value.hasta,
+      search: filtros.value.search,
+      status: filtros.value.status,
+    })
+    const nombre = `historial_ventas_${filtros.value.desde}_al_${filtros.value.hasta}.xlsx`
+    descargarBlob(res.data, nombre)
+  } catch (e: any) {
+    let mensaje = 'Error al generar el reporte Excel'
+    if (e.response?.data instanceof Blob) {
+      const texto = await e.response.data.text()
+      try {
+        const json = JSON.parse(texto)
+        mensaje = json.message || mensaje
+      } catch { /* no es JSON */ }
+    }
+    Swal.fire({ icon: 'error', title: 'Error', text: mensaje })
+  } finally {
+    exportando.value = null
+  }
+}
+
+async function descargarPdf() {
+  if (exportando.value) return
+  exportando.value = 'pdf'
+  try {
+    const res = await exportHistorialPdf({
+      desde:  filtros.value.desde,
+      hasta:  filtros.value.hasta,
+      search: filtros.value.search,
+      status: filtros.value.status,
+    })
+    const nombre = `historial_ventas_${filtros.value.desde}_al_${filtros.value.hasta}.pdf`
+    descargarBlob(res.data, nombre)
+  } catch (e: any) {
+    let mensaje = 'Error al generar el reporte PDF'
+    if (e.response?.data instanceof Blob) {
+      const texto = await e.response.data.text()
+      try {
+        const json = JSON.parse(texto)
+        mensaje = json.message || mensaje
+      } catch { /* no es JSON */ }
+    }
+    Swal.fire({ icon: 'error', title: 'Error', text: mensaje })
+  } finally {
+    exportando.value = null
+  }
 }
 </script>
 
@@ -290,6 +361,39 @@ function colorStatus(status: string) {
         <i class="fa-solid fa-xmark mr-1 text-[11px]"></i>
         Limpiar Filtros
       </button>
+
+      <!-- boton exportar Excel -->
+      <button
+        @click="descargarExcel"
+        :disabled="exportando !== null"
+        class="flex items-center gap-1.5 px-3 py-1.5
+              text-xs font-medium rounded-lg shadow-sm transition whitespace-nowrap
+              bg-emerald-600 hover:bg-emerald-700 text-white
+              disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <i
+          class="fa-solid text-[11px]"
+          :class="exportando === 'excel' ? 'fa-spinner fa-spin' : 'fa-file-excel'"
+        ></i>
+        {{ exportando === 'excel' ? 'Generando...' : 'Excel' }}
+      </button>
+
+      <!-- boton exportar PDF -->
+      <button
+        @click="descargarPdf"
+        :disabled="exportando !== null"
+        class="flex items-center gap-1.5 px-3 py-1.5
+              text-xs font-medium rounded-lg shadow-sm transition whitespace-nowrap
+              bg-red-600 hover:bg-red-700 text-white
+              disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <i
+          class="fa-solid text-[11px]"
+          :class="exportando === 'pdf' ? 'fa-spinner fa-spin' : 'fa-file-pdf'"
+        ></i>
+        {{ exportando === 'pdf' ? 'Generando...' : 'PDF' }}
+      </button>
+
     </div>
 
     <!-- tabla -->

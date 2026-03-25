@@ -119,3 +119,21 @@ export async function fetchHistorialBalance(params: { meses: number }) {
   const res = await axiosInstance.get('/finance/balance/historial', { params })
   return res.data.data
 }
+
+// Exportar balance en Excel
+export async function exportBalanceExcel(params: { fecha_inicio: string; fecha_fin: string }) {
+  const res = await axiosInstance.get('/finance/balance/export/excel', {
+    params,
+    responseType: 'blob'
+  })
+  return res
+}
+
+// Exportar balance en PDF
+export async function exportBalancePdf(params: { fecha_inicio: string; fecha_fin: string }) {
+  const res = await axiosInstance.get('/finance/balance/export/pdf', {
+    params,
+    responseType: 'blob'
+  })
+  return res
+}

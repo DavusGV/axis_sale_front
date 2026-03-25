@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import ResumenBalance  from '@/components/finanzas/ResumenBalance.vue'
 import HistorialBalance from '@/components/finanzas/HistorialBalance.vue'
-import PlaceloadList   from '@/components/placeload/PlaceLoadList.vue'
 import { ref, computed, watch } from 'vue'
+import { exportBalanceExcel, exportBalancePdf } from '@/api/finanzas'
 
-// Estado de fechas
+// Estado de fechas para los componentes existentes
 const today        = new Date()
 const currentYear  = today.getFullYear()
 const currentMonth = today.getMonth() + 1
@@ -16,7 +16,7 @@ const month = ref<number>(currentMonth)
 const mesesHistorial = ref<number>(3)
 const opcionesMeses  = [3, 6, 12, 24]
 
-const anioInicio = 2023 // ajustar segun necesidad
+const anioInicio = 2023
 
 const years = computed(() => {
   const list = []
@@ -25,11 +25,10 @@ const years = computed(() => {
 })
 
 const months = computed(() => {
-  let start = 1
-  let end   = 12
+  let end = 12
   if (year.value === currentYear) end = currentMonth
   const list = []
-  for (let m = start; m <= end; m++) {
+  for (let m = 1; m <= end; m++) {
     list.push({
       value: m,
       label: new Date(0, m - 1).toLocaleString('es-MX', { month: 'long' }),
@@ -47,11 +46,91 @@ watch(year, () => {
 const nombreMesActual = computed(() =>
   new Date(0, month.value - 1).toLocaleString('es-MX', { month: 'long' })
 )
+
+// ── Exportacion: date pickers y estado ──
+
+// Formato YYYY-MM-DD para los inputs date
+function formatDate(y: number, m: number, d: number): string {
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
+// Fecha inicio: primer dia del mes seleccionado
+const fechaInicio = ref<string>(formatDate(currentYear, currentMonth, 1))
+
+// Fecha fin: dia actual o ultimo dia del mes
+const fechaFin = ref<string>(formatDate(currentYear, currentMonth, today.getDate()))
+
+const exportando = ref<'excel' | 'pdf' | null>(null)
+
+// Funcion generica para descargar archivos blob
+function descargarBlob(data: Blob, nombreArchivo: string) {
+  const url = window.URL.createObjectURL(data)
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', nombreArchivo)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+async function descargarExcel() {
+  if (exportando.value) return
+  exportando.value = 'excel'
+  try {
+    const res = await exportBalanceExcel({
+      fecha_inicio: fechaInicio.value,
+      fecha_fin: fechaFin.value
+    })
+    const nombre = `balance_${fechaInicio.value}_al_${fechaFin.value}.xlsx`
+    descargarBlob(res.data, nombre)
+  } catch (e: any) {
+    console.error('Error al exportar Excel:', e)
+    // Cuando el responseType es blob, el error viene como blob tambien
+    let mensaje = 'Error al generar el reporte Excel'
+    if (e.response?.data instanceof Blob) {
+      const texto = await e.response.data.text()
+      try {
+        const json = JSON.parse(texto)
+        mensaje = json.message || mensaje
+      } catch { /* no es JSON */ }
+    }
+    alert(mensaje)
+  } finally {
+    exportando.value = null
+  }
+}
+
+async function descargarPdf() {
+  if (exportando.value) return
+  exportando.value = 'pdf'
+  try {
+    const res = await exportBalancePdf({
+      fecha_inicio: fechaInicio.value,
+      fecha_fin: fechaFin.value
+    })
+    const nombre = `balance_${fechaInicio.value}_al_${fechaFin.value}.pdf`
+    descargarBlob(res.data, nombre)
+  } catch (e: any) {
+    console.error('Error al exportar PDF:', e)
+    let mensaje = 'Error al generar el reporte PDF'
+    if (e.response?.data instanceof Blob) {
+      const texto = await e.response.data.text()
+      try {
+        const json = JSON.parse(texto)
+        mensaje = json.message || mensaje
+      } catch { /* no es JSON */ }
+    }
+    alert(mensaje)
+  } finally {
+    exportando.value = null
+  }
+}
 </script>
 
 <template>
 
-  <!-- barra de filtros — mismo estilo que GastosView -->
+  <!-- barra de filtros -->
   <div
     class="min-w-[140px] flex flex-wrap items-center justify-between gap-3 mb-6
            bg-white dark:bg-gray-800
@@ -67,7 +146,7 @@ const nombreMesActual = computed(() =>
       </span>
     </h2>
 
-    <!-- selectores de fecha -->
+    <!-- selectores de fecha y exportacion -->
     <div class="flex flex-wrap items-center gap-3">
 
       <!-- selector de anio -->
@@ -121,6 +200,73 @@ const nombreMesActual = computed(() =>
           </option>
         </select>
       </div>
+
+      <!-- separador visual -->
+      <div class="hidden sm:block w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
+
+      <!-- date picker: desde -->
+      <div class="relative">
+        <label class="absolute -top-2 left-3 text-[10px] text-gray-400 bg-white dark:bg-gray-800 px-1">Desde</label>
+        <input
+          v-model="fechaInicio"
+          type="date"
+          @click="($event.target as HTMLInputElement).showPicker()"
+          class="px-3 py-2 text-sm rounded-xl min-w-[140px]
+                 bg-gray-50 dark:bg-gray-700
+                 text-gray-800 dark:text-gray-100
+                 border border-gray-300 dark:border-gray-600
+                 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500
+                 transition"
+        />
+      </div>
+
+      <!-- date picker: hasta -->
+      <div class="relative">
+        <label class="absolute -top-2 left-3 text-[10px] text-gray-400 bg-white dark:bg-gray-800 px-1">Hasta</label>
+        <input
+          v-model="fechaFin"
+          type="date"
+          @click="($event.target as HTMLInputElement).showPicker()"
+          class="px-3 py-2 text-sm rounded-xl min-w-[140px]
+                 bg-gray-50 dark:bg-gray-700
+                 text-gray-800 dark:text-gray-100
+                 border border-gray-300 dark:border-gray-600
+                 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500
+                 transition"
+        />
+      </div>
+
+      <!-- boton exportar Excel -->
+      <button
+        @click="descargarExcel"
+        :disabled="exportando !== null"
+        class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl
+               bg-emerald-600 hover:bg-emerald-700 text-white
+               disabled:opacity-50 disabled:cursor-not-allowed
+               transition shadow-sm"
+      >
+        <i
+          class="fa-solid"
+          :class="exportando === 'excel' ? 'fa-spinner fa-spin' : 'fa-file-excel'"
+        ></i>
+        <span class="hidden sm:inline">{{ exportando === 'excel' ? 'Generando...' : 'Excel' }}</span>
+      </button>
+
+      <!-- boton exportar PDF -->
+      <button
+        @click="descargarPdf"
+        :disabled="exportando !== null"
+        class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl
+               bg-red-600 hover:bg-red-700 text-white
+               disabled:opacity-50 disabled:cursor-not-allowed
+               transition shadow-sm"
+      >
+        <i
+          class="fa-solid"
+          :class="exportando === 'pdf' ? 'fa-spinner fa-spin' : 'fa-file-pdf'"
+        ></i>
+        <span class="hidden sm:inline">{{ exportando === 'pdf' ? 'Generando...' : 'PDF' }}</span>
+      </button>
 
     </div>
   </div>

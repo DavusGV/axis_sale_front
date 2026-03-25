@@ -105,3 +105,21 @@ export async function actualizarDetallesVenta(ventaId: number, data: any) {
   const res = await axiosInstance.put(`/ventas/${ventaId}/detalles`, data)
   return res.data
 }
+
+// Exportar historial en Excel
+export async function exportHistorialExcel(params: any = {}) {
+  const res = await axiosInstance.get('/ventas/historial/export/excel', {
+    params,
+    responseType: 'blob'
+  })
+  return res
+}
+
+// Exportar historial en PDF
+export async function exportHistorialPdf(params: any = {}) {
+  const res = await axiosInstance.get('/ventas/historial/export/pdf', {
+    params,
+    responseType: 'blob'
+  })
+  return res
+}
