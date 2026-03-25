@@ -436,8 +436,8 @@ async function confirmarAbono() {
   try {
     const res = await registrarAbono(planLocal.value.id, {
       monto_pagado:    montoAbono.value,
-      metodo_pago:     'Abono a credito',
-      metodo_pago_id:  null,
+      metodo_pago:     metodoPago.value,
+      metodo_pago_id:  metodoPagoId.value,
       notas:           notas.value || null,
       usuario_id:      user.id,
     })
