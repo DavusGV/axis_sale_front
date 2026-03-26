@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { IconAlertTriangle, IconAlertCircle } from '@tabler/icons-vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // Recibimos stock separado en dos grupos
 const props = defineProps<{
@@ -9,7 +12,10 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="col-span-12 lg:col-span-4 box">
+  <div
+    class="col-span-12 lg:col-span-4 box cursor-pointer hover:shadow-md transition"
+    @click="router.push('/configuracion/productos')"
+  >
     <p class="font-medium pb-4 lg:pb-6 mb-4 lg:mb-6 bb-dashed">
       Stock de productos
     </p>

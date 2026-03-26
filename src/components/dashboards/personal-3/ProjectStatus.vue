@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { IconTrophy } from '@tabler/icons-vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const props = defineProps<{
   topProductos: Array<{
@@ -15,7 +18,9 @@ const bgColores = ['bg-yellow-500/10', 'bg-gray-400/10', 'bg-amber-700/10']
 </script>
 
 <template>
-  <div class="col-span-12 lg:col-span-4 box">
+  <div class="col-span-12 lg:col-span-4 box cursor-pointer hover:shadow-md transition"
+    @click.stop="router.push('/reportes/ventas')"
+  >
     <div class="flex items-center gap-2 pb-4 lg:pb-6 mb-4 lg:mb-6 bb-dashed">
       <p class="font-medium">Productos mas vendidos</p>
     </div>

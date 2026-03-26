@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const props = defineProps<{
   ventasDia: Array<{
@@ -10,7 +13,9 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="box col-span-12 lg:col-span-8">
+  <div class="col-span-12 lg:col-span-8 box cursor-pointer hover:shadow-md transition"
+    @click.stop="router.push('/ventas/historial')"
+  >
     <div class="flex flex-wrap justify-between items-center gap-3 pb-4 lg:pb-6 mb-4 lg:mb-6 bb-dashed">
       <p class="font-medium">Ventas del dia - Productos vendidos</p>
     </div>
