@@ -40,6 +40,51 @@
             <p>No hay productos en esta cotizacion.</p>
           </div>
 
+          <!-- buscador de productos -->
+          <div class="mb-4 relative">
+            <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Agregar producto
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+              </span>
+              <input
+                v-model="busquedaProducto"
+                @input="onBuscarProducto"
+                type="text"
+                placeholder="Buscar producto por nombre o codigo..."
+                class="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
+                      bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                      focus:ring-1 focus:ring-green-400 transition text-sm"
+                autocomplete="off"
+              />
+            </div>
+
+            <ul
+              v-if="resultadosBusqueda.length"
+              class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200
+                    dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+            >
+              <li
+                v-for="prod in resultadosBusqueda"
+                :key="prod.id"
+                @click="agregarProductoNuevo(prod)"
+                class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer
+                      flex justify-between items-center text-sm"
+              >
+                <span class="text-gray-800 dark:text-white">{{ prod.nombre }}</span>
+                <span class="text-xs text-gray-400">
+                  ${{ Number(prod.precio_venta).toFixed(2) }}
+                  <span v-if="!prod.es_servicio"> · Stock: {{ prod.stock }}</span>
+                </span>
+              </li>
+            </ul>
+
+            <p v-if="buscando" class="text-xs text-gray-400 mt-1">
+              <i class="fa-solid fa-spinner fa-spin mr-1"></i> Buscando...
+            </p>
+          </div>
           <!-- lista de productos -->
           <div class="flex flex-col gap-3">
             <div
@@ -275,7 +320,7 @@ import ModalPago from '@/components/ventas/ModalPago.vue'
 import ModalDescuentoProducto from '@/components/ventas/ModalDescuentoProducto.vue'
 import ModalPrecioServicio from '@/components/ventas/ModalPrecioServicio.vue'
 import { comprobarStockCotizacion, convertirCotizacion, actualizarDetallesCotizacion } from '@/api/cotizaciones'
-import { fetchTicket } from '@/api/ventas'
+import { fetchTicket, fetchProducts } from '@/api/ventas'
 import Swal from 'sweetalert2'
 
 interface ItemComprobar {
@@ -313,6 +358,10 @@ const showModalDescuento = ref(false)
 const itemDescuento      = ref<any>(null)
 const showModalPrecio    = ref(false)
 const itemPrecio         = ref<any>(null)
+const busquedaProducto = ref('')
+const resultadosBusqueda = ref<any[]>([])
+const buscando = ref(false)
+let timeoutBusqueda: ReturnType<typeof setTimeout> | null = null
 
 // detecta si hay cambios respecto al estado original
 const hayCambios = computed(() => {
@@ -380,6 +429,70 @@ async function comprobar() {
   } finally {
     cargando.value = false
   }
+}
+
+function onBuscarProducto() {
+  if (timeoutBusqueda) clearTimeout(timeoutBusqueda)
+
+  if (busquedaProducto.value.length < 2) {
+    resultadosBusqueda.value = []
+    return
+  }
+
+  timeoutBusqueda = setTimeout(async () => {
+    buscando.value = true
+    try {
+      const res = await fetchProducts({ page: 1, search: busquedaProducto.value })
+      const idsEnLista = items.value.map(i => i.producto_id)
+      resultadosBusqueda.value = res.data.filter(
+        (p: any) => !idsEnLista.includes(p.id)
+      )
+    } catch {
+      resultadosBusqueda.value = []
+    } finally {
+      buscando.value = false
+    }
+  }, 300)
+}
+
+function agregarProductoNuevo(producto: any) {
+  // validamos stock si no es servicio
+  if (!producto.es_servicio && (producto.stock ?? 0) < 1) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Sin stock',
+      text: `El producto "${producto.nombre}" no tiene stock disponible.`,
+      confirmButtonColor: '#ef4444'
+    })
+    busquedaProducto.value = ''
+    resultadosBusqueda.value = []
+    return
+  }
+
+  const item: any = {
+    cotizacion_detalle_id: 0,
+    producto_id:           producto.id,
+    nombre:                producto.nombre,
+    cantidad:              1,
+    cantidad_original:     0,
+    precio:                producto.precio_venta,
+    precio_original:       producto.precio_venta,
+    precio_compra:         producto.precio_compra,
+    stock_disponible:      producto.stock ?? null,
+    es_servicio:           producto.es_servicio ?? false,
+    problema:              false,
+    mensaje:               null,
+    tipo_descuento:        null,
+    descuento:             0,
+    descuento_aplicado:    0,
+  }
+
+  item._descuento_original = 0
+  item._tipo_descuento_original = null
+
+  items.value.push(item)
+  busquedaProducto.value = ''
+  resultadosBusqueda.value = []
 }
 
 // calcula el subtotal de un item con descuento
@@ -520,11 +633,24 @@ async function guardarCambios() {
     })
     return
   }
+  
+  // validamos stock de los items antes de guardar
+  const sinStock = itemsValidos.find(i => !i.es_servicio && i.stock_disponible !== null && i.cantidad > i.stock_disponible)
+  if (sinStock) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Stock insuficiente',
+      text: `"${sinStock.nombre}" tiene solo ${sinStock.stock_disponible} unidades disponibles.`,
+      confirmButtonColor: '#ef4444'
+    })
+    return
+  }
 
   guardando.value = true
   try {
     const detalles = itemsValidos.map(item => ({
       cotizacion_detalle_id: item.cotizacion_detalle_id,
+      producto_id:           item.producto_id,
       cantidad:              item.cantidad,
       precio:                item.precio,
       tipo_descuento:        item.tipo_descuento,

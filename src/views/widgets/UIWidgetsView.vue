@@ -49,7 +49,6 @@ import Gallery from '@/components/widgets/ui/Gallery.vue'
     <div class="col-span-12 min-[640px]:col-span-6 xl:col-span-12 grid grid-cols-12 gap-4 xxxl:gap-6">
       <LiveUsers />
       <div class="col-span-12 xl:col-span-6 min-h-full">
-        <ProjectStatus />
       </div>
     </div>
   </div>

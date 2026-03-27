@@ -6,7 +6,7 @@ import Cart from '@/components/ventas/Cart.vue'
 import ResumenVenta from '@/components/ventas/ResumenVenta.vue'
 import ModalPago from '@/components/ventas/ModalPago.vue'
 import ModalDescuentoProducto from '@/components/ventas/ModalDescuentoProducto.vue'
-import { buscarPorCodigoBarras, registrarVenta, fetchProducts, fetchTicket } from '@/api/ventas'
+import { buscarPorCodigoBarras, registrarVenta, fetchProducts, fetchTicket, verificarStock } from '@/api/ventas'
 import { fetchConfiguracion } from '@/api/configuracion'
 import { useAuthStore } from '@/stores/authStore'
 import { crearPlanPago } from '@/api/planes_pago'
@@ -286,6 +286,31 @@ function sumarCantidad(id: number) {
   item.cantidad++
 }
 
+function cambiarCantidad(id: number, nuevaCantidad: number) {
+  const item = carrito.value.find(i => i.producto_id === id)
+  if (!item) return
+
+  // si el valor es menor a 1, forzamos minimo 1
+  if (nuevaCantidad < 1) {
+    item.cantidad = 1
+    return
+  }
+
+  // validamos stock solo si NO es servicio
+  if (!item.es_servicio && nuevaCantidad > item.stock) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Stock insuficiente',
+      text: `Solo quedan ${item.stock} unidades de: ${item.nombre}`,
+      confirmButtonColor: '#ef4444'
+    })
+    item.cantidad = item.stock
+    return
+  }
+
+  item.cantidad = nuevaCantidad
+}
+
 function restarCantidad(id: number) {
   const item = carrito.value.find(i => i.producto_id === id)
   if (item && item.cantidad > 1) item.cantidad--
@@ -389,6 +414,51 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     metodo_pago,
     metodo_pago_id,
     detalles,
+  }
+
+  // verificamos stock fresco solo de los productos del carrito
+  const idsCarrito = carrito.value
+    .filter(i => !i.es_servicio)
+    .map(i => i.producto_id)
+
+  if (idsCarrito.length) {
+    const res = await verificarStock(idsCarrito)
+    const stockActual = res.productos
+    const cambiosStock: string[] = []
+
+    carrito.value.forEach(item => {
+      if (item.es_servicio) return
+      const prod = stockActual[item.producto_id]
+      if (!prod) return
+
+      if (prod.stock !== item.stock) {
+        cambiosStock.push(`"${item.nombre}": tenia ${item.stock}, ahora tiene ${prod.stock}`)
+        item.stock = prod.stock
+      }
+    })
+
+    if (cambiosStock.length) {
+      showModalPago.value = false
+      Swal.fire({
+        icon: 'info',
+        title: 'Stock actualizado',
+        html: `Otro vendedor modifico el stock de:<br><br>${cambiosStock.join('<br>')}<br><br>Revisa las cantidades del carrito antes de continuar.`,
+        confirmButtonColor: '#3b82f6'
+      })
+      return
+    }
+
+    const sinStock = carrito.value.find(i => !i.es_servicio && i.cantidad > i.stock)
+    if (sinStock) {
+      showModalPago.value = false
+      Swal.fire({
+        icon: 'warning',
+        title: 'Stock insuficiente',
+        text: `"${sinStock.nombre}" tiene solo ${sinStock.stock} unidades disponibles.`,
+        confirmButtonColor: '#ef4444'
+      })
+      return
+    }
   }
 
   try {
@@ -627,6 +697,7 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
         @eliminar="eliminarDelCarrito"
         @descuento="abrirDescuentoProducto"
         @cambiar-precio="cambiarPrecioServicio"
+        @cambiar-cantidad="cambiarCantidad"
       />
       <ResumenVenta
         :total="total"
