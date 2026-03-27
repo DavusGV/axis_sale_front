@@ -6,7 +6,7 @@ import EmailSettings from '@/components/widgets/ui/EmailSettings.vue'
 import PopularTag from '@/components/widgets/ui/PopularTag.vue'
 import WhoFollowing from '@/components/widgets/ui/WhoFollowing.vue'
 import Calendar from '@/components/dashboards/personal-2/Calendar.vue'
-import ProjectStatus from '@/components/dashboards/personal-3/ProjectStatus.vue'
+/* import ProjectStatus from '@/components/dashboards/personal-3/ProjectStatus.vue' */
 import LiveUsers from '@/components/widgets/ui/LiveUsers.vue'
 import SearchBar from '@/components/widgets/ui/SearchBar.vue'
 import Followers from '@/components/widgets/ui/Followers.vue'
@@ -49,6 +49,7 @@ import Gallery from '@/components/widgets/ui/Gallery.vue'
     <div class="col-span-12 min-[640px]:col-span-6 xl:col-span-12 grid grid-cols-12 gap-4 xxxl:gap-6">
       <LiveUsers />
       <div class="col-span-12 xl:col-span-6 min-h-full">
+       <!--  <ProjectStatus /> -->
       </div>
     </div>
   </div>
