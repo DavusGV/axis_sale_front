@@ -38,13 +38,43 @@ const ticketVentaData      = ref<any>(null)
 // dropdown menu de acciones por cotizacion
 const dropdownAbierto = ref<number | string | null>(null)
 const dropdownRefs    = ref<Record<string, HTMLElement | null>>({})
+const dropdownStyle = ref<Record<string, string>>({})
 
 function setDropdownRef(el: any, id: number | string) {
   if (el) dropdownRefs.value[id] = el
 }
 
 function toggleDropdown(id: number | string) {
-  dropdownAbierto.value = dropdownAbierto.value === id ? null : id
+  if (dropdownAbierto.value === id) {
+    dropdownAbierto.value = null
+    return
+  }
+
+  dropdownAbierto.value = id
+
+  const refEl = dropdownRefs.value[id]
+  if (!refEl) return
+
+  const rect = refEl.getBoundingClientRect()
+  const spaceBelow = window.innerHeight - rect.top
+  const spaceAbove = rect.top
+
+  dropdownStyle.value = {}
+
+  // alineamos el menu al mismo nivel del boton
+  if (spaceAbove > spaceBelow) {
+    // abre hacia arriba, anclado desde abajo al nivel del boton
+    dropdownStyle.value = {
+      bottom: `${window.innerHeight - rect.bottom}px`,
+      right: `${window.innerWidth - rect.left + 4}px`,
+    }
+  } else {
+    // abre hacia abajo, anclado desde arriba al nivel del boton
+    dropdownStyle.value = {
+      top: `${rect.top}px`,
+      right: `${window.innerWidth - rect.left + 4}px`,
+    }
+  }
 }
 
 function cerrarDropdown() {
@@ -445,9 +475,9 @@ function colorStatus(status: string) {
 
           <ul
             v-show="dropdownAbierto === item.id"
-            class="absolute right-full mr-1 border text-sm z-30 dark:border-gray-600
+            class="fixed border text-sm z-50 dark:border-gray-600
                   min-w-[170px] p-1.5 rounded-md bg-white dark:bg-gray-800 shadow-lg"
-            :class="{ 'bottom-0': index >= cotizaciones.length - 2 }"
+            :style="dropdownStyle"
           >
             <!-- ver ticket cotizacion (siempre) -->
             <li>

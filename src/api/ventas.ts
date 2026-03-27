@@ -57,6 +57,10 @@ export async function buscarPorCodigoBarras(codigo: string) {
   return res.data
 }
 
+// verifica la cantidad de stock correcto antes de vender
+export const verificarStock = (producto_ids: number[]) =>
+  axiosInstance.post('/ventas/verificar-stock', { producto_ids }).then(r => r.data)
+
 // Función para registrar una venta
 export async function registrarVenta(ventaData: VentaData) {
   const res = await axiosInstance.post('/ventas/store', ventaData)

@@ -57,9 +57,15 @@
           <i class="fa-solid fa-minus text-xs"></i>
         </button>
 
-        <span class="font-semibold text-gray-700 dark:text-gray-200 w-6 text-center">
-          {{ item.cantidad }}
-        </span>
+        <input
+          type="number"
+          :value="item.cantidad"
+          min="1"
+          class="w-12 text-center font-semibold text-gray-700 dark:text-gray-200 
+                bg-transparent border-b border-gray-300 dark:border-gray-600
+                focus:outline-none focus:border-blue-500"
+          @change="$emit('cambiarCantidad', item.producto_id, Number($event.target.value))"
+        />
 
 
         <button class="w-8 h-8 flex items-center justify-center rounded-full 
@@ -93,5 +99,5 @@
 
 <script setup>
 defineProps(['items', 'img'])
-defineEmits(['sumar', 'restar', 'eliminar', 'descuento', 'cambiarPrecio'])
+defineEmits(['sumar', 'restar', 'eliminar', 'descuento', 'cambiarPrecio', 'cambiarCantidad'])
 </script>
