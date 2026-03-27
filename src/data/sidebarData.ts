@@ -65,6 +65,7 @@ export const sidebarData = [
                 name: "Modulos",
                 icon: IconSettingsBolt,
                 submenus: [
+                    { title: "Categoria", url: "/configuracion/categorias" },
                     { title: "Productos", url: "/configuracion/productos" },
                     { title: "Cajas", url: "/cajas" },
                     { title: "Ventas", url: "/ventas/ventas" },

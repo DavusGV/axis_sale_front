@@ -117,6 +117,7 @@ import ConfiguracionView from '@/views/configuracion/Configuracion.View.vue';
 import ContizacionView from '@/views/ventas/ContizacionView.vue';
 import VentasHistorialView from '@/views/ventas/VentasHistorialView.vue';
 import PersonalThreeVue from '@/views/dashboards/PersonalThree.vue';
+import CategoriaView from '@/views/products/CategoriaView.vue';
 
 
 const router = createRouter({
@@ -757,6 +758,12 @@ const router = createRouter({
       path: '/configuracion/productos',
       name: 'productos',
       component: ProductosView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/configuracion/categorias',
+      name: 'categorias',
+      component: CategoriaView,
       meta: { requiresAuth: true } 
     },
     {
