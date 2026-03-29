@@ -4,8 +4,7 @@ import TopBanner from '@/components/shared/TopBanner.vue'
 import DataTable from '@/components/plantillas/DataTable.vue'
 import ModalTicket from '@/components/ventas/ModalTicket.vue'
 import ModalEditarVenta from '@/components/ventas/ModalEditarVenta.vue'
-import { fetchHistorialVentas, fetchTicket, cancelarVenta, exportHistorialExcel, exportHistorialPdf } from '@/api/ventas'
-import { fetchConfiguracion } from '@/api/configuracion'
+import { fetchHistorialVentas, cancelarVenta, exportHistorialExcel, exportHistorialPdf } from '@/api/ventas'
 import Swal from 'sweetalert2'
 
 const ventas        = ref<any[]>([])
@@ -15,11 +14,10 @@ const totalItems    = ref(0)
 const startIndex    = ref(0)
 const endIndex      = ref(0)
 const loading       = ref(false)
-const configuracion = ref<any>(null)
 
 // ticket
 const showModalTicket = ref(false)
-const ticketData      = ref<any>(null)
+const ticketVentaId = ref<number | null>(null)
 
 // editar venta
 const showModalEditar = ref(false)
@@ -90,11 +88,6 @@ const columns = [
 onMounted(async () => {
   document.addEventListener('click', onClickFuera)
   await cargarHistorial()
-  try {
-    configuracion.value = await fetchConfiguracion()
-  } catch {
-    // valores por defecto
-  }
 })
 
 onUnmounted(() => {
@@ -128,20 +121,10 @@ const paginate = (p: number) => cargarHistorial(p)
 const nextPage = () => { if (page.value < lastPage.value) cargarHistorial(page.value + 1) }
 const prevPage = () => { if (page.value > 1) cargarHistorial(page.value - 1) }
 
-async function verTicket(venta: any) {
-  try {
-    Swal.fire({
-      title: 'Cargando ticket...',
-      allowOutsideClick: false,
-      didOpen: () => { Swal.showLoading() }
-    })
-    const res            = await fetchTicket(venta.id)
-    ticketData.value     = res.ticket
-    showModalTicket.value = true
-    Swal.close()
-  } catch {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar el ticket.' })
-  }
+function verTicket(venta: any) {
+  // solo asignamos el id, el modal se encarga de pedir el PDF al backend
+  ticketVentaId.value   = venta.id
+  showModalTicket.value = true
 }
 
 function abrirEditar(venta: any) {
@@ -498,12 +481,11 @@ async function descargarPdf() {
 
   <!-- modal ticket -->
   <ModalTicket
-    v-if="showModalTicket && ticketData"
-    :ticket="ticketData"
+    v-if="showModalTicket && ticketVentaId"
+    :id="ticketVentaId"
     tipo="venta"
-    :impresora_ancho="configuracion?.impresora_ancho ?? 80"
-    :impresora_alto="configuracion?.impresora_alto ?? 200"
-    @close="showModalTicket = false"
+    :folio="ventas.find(v => v.id === ticketVentaId)?.folio"
+    @close="showModalTicket = false; ticketVentaId = null"
   />
 
   <!-- modal editar venta -->

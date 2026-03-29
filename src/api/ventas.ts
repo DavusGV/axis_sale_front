@@ -79,10 +79,11 @@ export async function getMetodosPago() {
   return res.data
 }
 
-// obtiene los datos del ticket de una venta por su id
-export async function fetchTicket(ventaId: number) {
-    const res = await axiosInstance.get(`/ventas/${ventaId}/ticket`)
-    return res.data.data
+export async function descargarTicketPdf(ventaId: number) {
+  const res = await axiosInstance.get(`/ventas/${ventaId}/ticket-pdf`, {
+    responseType: 'blob'
+  })
+  return res
 }
 
 //funciones de historial

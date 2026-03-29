@@ -12,10 +12,11 @@ export const registrarCotizacion = async (data: any) => {
   return res.data
 }
 
-// obtiene el ticket de una cotizacion por id
-export const fetchTicketCotizacion = async (id: number) => {
-  const res = await axiosInstance.get(`/cotizaciones/${id}/ticket`)
-  return res.data
+export async function descargarTicketCotizacionPdf(id: number) {
+  const res = await axiosInstance.get(`/cotizaciones/${id}/ticket-pdf`, {
+    responseType: 'blob'
+  })
+  return res
 }
 
 // comprueba el stock de los productos de una cotizacion

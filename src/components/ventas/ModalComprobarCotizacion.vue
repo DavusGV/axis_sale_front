@@ -320,7 +320,7 @@ import ModalPago from '@/components/ventas/ModalPago.vue'
 import ModalDescuentoProducto from '@/components/ventas/ModalDescuentoProducto.vue'
 import ModalPrecioServicio from '@/components/ventas/ModalPrecioServicio.vue'
 import { comprobarStockCotizacion, convertirCotizacion, actualizarDetallesCotizacion } from '@/api/cotizaciones'
-import { fetchTicket, fetchProducts } from '@/api/ventas'
+import { fetchProducts } from '@/api/ventas'
 import Swal from 'sweetalert2'
 
 interface ItemComprobar {
@@ -345,7 +345,7 @@ const props = defineProps<{
   cotizacion: any
 }>()
 
-const emit = defineEmits(['close', 'vendido'])
+const emit = defineEmits<{ vendido: [ventaId?: number, folio?: string], close: [] }>()
 
 const items          = ref<ItemComprobar[]>([])
 const hayProblemas   = ref(false)
@@ -759,14 +759,13 @@ async function confirmarVenta({ pago, metodo_pago, metodo_pago_id, total_final, 
 
     const resultado = await convertirCotizacion(props.cotizacion.id, ventaData)
 
-    // cargamos el ticket de la venta recien generada
-    const ticketRes = await fetchTicket(resultado.data.venta.id)
-
     Swal.close()
     showModalPago.value = false
 
-    // emitimos el ticket para que el padre lo muestre
-    emit('vendido', ticketRes.ticket)
+    // emitimos el id y el folio de la venta para el ticket
+    emit('vendido', resultado.data.venta.id, resultado.data.venta.folio)
+    emit('close')
+
     emit('close')
 
   } catch (e: any) {

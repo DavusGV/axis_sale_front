@@ -6,16 +6,14 @@ import Cart from '@/components/ventas/Cart.vue'
 import ResumenVenta from '@/components/ventas/ResumenVenta.vue'
 import ModalPago from '@/components/ventas/ModalPago.vue'
 import ModalDescuentoProducto from '@/components/ventas/ModalDescuentoProducto.vue'
-import { buscarPorCodigoBarras, registrarVenta, fetchProducts, fetchTicket, verificarStock } from '@/api/ventas'
-import { fetchConfiguracion } from '@/api/configuracion'
+import { buscarPorCodigoBarras, registrarVenta, fetchProducts, verificarStock } from '@/api/ventas'
 import { useAuthStore } from '@/stores/authStore'
-import { crearPlanPago } from '@/api/planes_pago'
 import Swal from 'sweetalert2'
 import ModalAbono from '@/components/creditos/ModalAbonoCredito.vue'
 import ModalTicket from '@/components/ventas/ModalTicket.vue'
 import ModalPrecioServicio from '@/components/ventas/ModalPrecioServicio.vue'
 import ModalCotizacion from '@/components/ventas/ModalCotizacion.vue'
-import { registrarCotizacion, fetchTicketCotizacion } from '@/api/cotizaciones'
+import { registrarCotizacion } from '@/api/cotizaciones'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
@@ -24,11 +22,9 @@ const search = ref('')
 const carrito = ref<any[]>([])
 const page = ref(1)
 const lastPage = ref(1)
-const configuracion = ref<any>(null)
 
 // variables para el flujo de cotizacion
 const showModalCotizacion = ref(false)
-const cotizacionData      = ref<any>(null)
 
 // El total se recalcula dinamicamente usando descuento y tipo_descuento
 // para que al cambiar la cantidad el descuento se ajuste correctamente
@@ -67,8 +63,10 @@ const showModalPago = ref(false)
 const defaultImg = '/images/home/vuejs.png'
 const loading = ref(false)
 const showModalAbono = ref(false)
+const ticketTipo = ref<'venta' | 'cotizacion'>('venta')
+const ticketVentaId   = ref<number | null>(null)
+const ticketFolio = ref<string>('')
 const showModalTicket = ref(false)
-const ticketData = ref<any>(null)
 const showModalPrecioServicio = ref(false)
 const productoServicioTemp = ref<any>(null)
   
@@ -105,21 +103,6 @@ watch(
 onMounted(async () => {
   await loadProducts()
   iniciarEscuchaScanner() // Activar scanner automatico
-  // cargamos la configuracion del establecimiento
-  try {
-    configuracion.value = await fetchConfiguracion()
-  } catch {
-      // si falla se usaran valores por defecto de forma que no interrumpa el flujo
-      Swal.fire({
-        icon: 'warning',
-        title: 'Configuración no disponible',
-        text: 'Se usarán valores por defecto',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 2000
-      })
-    }
 })
 
 onUnmounted(() => {
@@ -405,7 +388,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     }
   })
 
-  const ventaData = {
+  const ventaData: any = {
     usuario_id,
     total: carrito.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0),
     total_final,
@@ -414,6 +397,11 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     metodo_pago,
     metodo_pago_id,
     detalles,
+  }
+
+  // si es credito enviamos los datos del plan junto con la venta
+  if (es_credito && credito) {
+    ventaData.credito = credito
   }
 
   // verificamos stock fresco solo de los productos del carrito
@@ -473,24 +461,16 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     const resultado = await registrarVenta(ventaData)
     console.log('resultado venta:', resultado) 
 
-    // si es credito registramos el plan de pago con el id de la venta recien creada
-    if (es_credito && credito) {
-      await crearPlanPago({
-        ...credito,
-        venta_id: resultado.data.venta.id,
-        usuario_id,
-        total_venta: total_final,
-      })
-    }
-
+    // despues de registrar la venta exitosamente
     carrito.value = []
     showModalPago.value = false
     await loadProducts()
     Swal.close()
 
-    // cargamos el ticket con los datos de la venta recien registrada
-    const ticket = await fetchTicket(resultado.data.venta.id)
-    ticketData.value = ticket.ticket
+    // abrimos el modal con el id de la venta
+    ticketTipo.value      = 'venta'
+    ticketVentaId.value   = resultado.data.venta.id
+    ticketFolio.value     = resultado.data.venta.folio
     showModalTicket.value = true
 
   } catch (e: any) {
@@ -500,14 +480,14 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     const errores = e?.response?.data?.errors
     const mensaje = errores
       ? Object.values(errores).flat().join('\n')
-      : e?.response?.data?.message || e?.message || 'No se pudo registrar la venta.'
+      : e?.response?.data?.data || e?.response?.data?.message || e?.message || 'No se pudo registrar la venta.'
 
-  Swal.fire({
-    icon: 'error',
-    title: 'Error',
-    text: mensaje,
-    confirmButtonColor: '#3b82f6'
-  })
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: mensaje,
+      confirmButtonColor: '#3b82f6'
+    })
   }
 }
 
@@ -560,9 +540,10 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
     showModalCotizacion.value = false
     Swal.close()
 
-    // corrige la estructura de la respuesta
-    const ticket          = await fetchTicketCotizacion(resultado.data.cotizacion.id)
-    ticketData.value      = ticket.data.ticket
+    // abrimos el modal con el id de la cotizacion
+    ticketTipo.value      = 'cotizacion'
+    ticketVentaId.value   = resultado.data.cotizacion.id
+    ticketFolio.value     = resultado.data.cotizacion.folio
     showModalTicket.value = true
 
   } catch (e: any) {
@@ -730,13 +711,12 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
     />
 
     <ModalTicket
-      v-if="showModalTicket && ticketData"
-      :ticket="ticketData"
-      :tipo="ticketData?.metodo_pago !== undefined ? 'venta' : 'cotizacion'"
-      :impresora_ancho="configuracion?.impresora_ancho ?? 80"
-      :impresora_alto="configuracion?.impresora_alto ?? 200"
-      @close="showModalTicket = false"
-      :auto-descargar="true"
+      v-if="showModalTicket && ticketVentaId"
+      :id="ticketVentaId"
+      :tipo="ticketTipo"
+      :folio="ticketFolio"
+      :descargar="true"
+      @close="showModalTicket = false; ticketVentaId = null; ticketFolio = ''"
     />
 
     <!-- Modal precio servicio -->

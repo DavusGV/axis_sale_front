@@ -210,7 +210,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { fetchTicket, actualizarMetodoPago, actualizarDetallesVenta, getMetodosPago, fetchProducts } from '@/api/ventas'
+import { actualizarMetodoPago, actualizarDetallesVenta, getMetodosPago, fetchProducts } from '@/api/ventas'
 import Swal from 'sweetalert2'
 
 interface ItemEditar {
@@ -322,34 +322,28 @@ async function cargarDatos() {
     const metRes = await getMetodosPago()
     metodosPago.value = metRes.data ?? []
 
-    // cargamos el ticket completo para obtener los detalles
-    const ticketRes = await fetchTicket(props.venta.id)
-    const ticket    = ticketRes.ticket
-
-    // buscamos el metodo de pago actual
+    // usamos los detalles que ya vienen en el prop venta
     const metodoActual = metodosPago.value.find(
-      (m: any) => m.nombre.toLowerCase() === (ticket.metodo_pago ?? '').toLowerCase()
+      (m: any) => m.id === props.venta.metodo_pago_id
     )
     metodoPagoId.value         = metodoActual?.id ?? metodosPago.value[0]?.id ?? null
-    metodoPagoNombre.value     = metodoActual?.nombre ?? ticket.metodo_pago ?? ''
+    metodoPagoNombre.value     = metodoActual?.nombre ?? props.venta.metodo_pago ?? ''
     metodoPagoOriginalId.value = metodoPagoId.value
 
-    // armamos los items editables desde los productos del ticket
-
-    // Por ahora usamos los datos disponibles
-    items.value = ticket.productos.map((p: any, idx: number) => ({
-      detalle_id:         p.detalle_id ?? idx, // se necesita agregar al backend
-      producto_id:        p.producto_id ?? 0,
-      nombre:             p.nombre,
-      cantidad:           p.cantidad,
-      cantidad_original:  p.cantidad,
-      precio:             p.precio_unitario,
-      precio_compra:      p.precio_compra ?? 0,
-      es_servicio:        p.es_servicio ?? false,
-      stock_disponible:   p.stock_disponible ?? null,
-      tipo_descuento:     p.tipo_descuento,
-      descuento:          p.descuento,
-      descuento_aplicado: p.descuento_aplicado,
+    // armamos los items desde los detalles del prop
+    items.value = (props.venta.detalles ?? []).map((d: any) => ({
+      detalle_id:         d.detalle_id,
+      producto_id:        d.producto_id,
+      nombre:             d.nombre,
+      cantidad:           d.cantidad,
+      cantidad_original:  d.cantidad,
+      precio:             d.precio,
+      precio_compra:      d.precio_compra,
+      es_servicio:        d.es_servicio,
+      stock_disponible:   d.stock_disponible,
+      tipo_descuento:     d.tipo_descuento,
+      descuento:          d.descuento,
+      descuento_aplicado: d.descuento_aplicado,
     }))
 
     itemsOriginalCount.value = items.value.length

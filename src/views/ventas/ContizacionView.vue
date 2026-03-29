@@ -4,9 +4,7 @@ import TopBanner from '@/components/shared/TopBanner.vue'
 import DataTable from '@/components/plantillas/DataTable.vue'
 import ModalTicket from '@/components/ventas/ModalTicket.vue'
 import ModalComprobarCotizacion from '@/components/ventas/ModalComprobarCotizacion.vue'
-import { fetchCotizaciones, fetchTicketCotizacion, cancelarCotizacion } from '@/api/cotizaciones'
-import { fetchConfiguracion } from '@/api/configuracion'
-import { fetchTicket } from '@/api/ventas'
+import { fetchCotizaciones, cancelarCotizacion } from '@/api/cotizaciones'
 import Swal from 'sweetalert2'
 
 // listado de cotizaciones
@@ -18,14 +16,12 @@ const totalItems   = ref(0)
 const startIndex   = ref(0)
 const endIndex     = ref(0)
 const loading        = ref(false)
-const configuracion  = ref<any>(null)
 
-// descargar ticket de venta realizada
-const descargarTicket = ref(false)
-
-// modal ticket cotizacion
 const showModalTicket = ref(false)
-const ticketData      = ref<any>(null)
+const ticketCotizacionId  = ref<number | null>(null)
+const ticketVentaId       = ref<number | null>(null)
+const ticketFolio = ref<string>('')
+const descargarTicketVenta = ref(false)
 
 // modal comprobar y convertir
 const showModalComprobar  = ref(false)
@@ -33,7 +29,6 @@ const cotizacionActiva    = ref<any>(null)
 
 // modal ticket venta (cuando la cotizacion ya fue vendida)
 const showModalTicketVenta = ref(false)
-const ticketVentaData      = ref<any>(null)
 
 // dropdown menu de acciones por cotizacion
 const dropdownAbierto = ref<number | string | null>(null)
@@ -93,20 +88,6 @@ function onClickFuera(e: MouseEvent) {
 onMounted(async () => {
   await cargarCotizaciones()
   document.addEventListener('click', onClickFuera)
-  try {
-    configuracion.value = await fetchConfiguracion()
-  } catch {
-      // si falla se usaran valores por defecto de forma que no interrumpa el flujo
-      Swal.fire({
-        icon: 'warning',
-        title: 'Configuración no disponible',
-        text: 'Se usarán valores por defecto',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 2000
-      })
-    }
 })
 
 onUnmounted(() => {
@@ -179,29 +160,17 @@ const paginate  = (p: number) => cargarCotizaciones(p)
 const nextPage  = () => { if (page.value < lastPage.value) cargarCotizaciones(page.value + 1) }
 const prevPage  = () => { if (page.value > 1) cargarCotizaciones(page.value - 1) }
 
-async function verTicket(cotizacion: any) {
-  descargarTicket.value = false
-  try {
-    Swal.fire({
-      title: 'Cargando ticket...',
-      allowOutsideClick: false,
-      didOpen: () => { Swal.showLoading() }
-    })
-    const res             = await fetchTicketCotizacion(cotizacion.id)
-    ticketData.value      = res.data.ticket  // corregido
-    showModalTicket.value = true
-    Swal.close()
-  } catch {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar el ticket.' })
-  }
+function verTicket(cotizacion: any) {
+  ticketCotizacionId.value  = cotizacion.id
+  showModalTicket.value     = true
 }
 
-async function verTicketVenta(cotizacion: any) {
-  if (cotizacion.status !== 'vendido' || !cotizacion.venta_folio) {
+function verTicketVenta(cotizacion: any) {
+  if (!cotizacion.venta_id) {
     Swal.fire({
       icon: 'info',
       title: 'No disponible',
-      text: 'Esta cotización no tiene una venta asociada.',
+      text: 'Esta cotizacion no tiene una venta asociada.',
       toast: true,
       position: 'top-end',
       showConfirmButton: false,
@@ -209,29 +178,9 @@ async function verTicketVenta(cotizacion: any) {
     })
     return
   }
-
-  try {
-    Swal.fire({
-      title: 'Cargando ticket de venta...',
-      allowOutsideClick: false,
-      didOpen: () => { Swal.showLoading() }
-    })
-
-    // necesitamos el id de la venta, lo buscamos desde el backend
-    const res = await fetchTicketCotizacion(cotizacion.id)
-    const ventaFolio = res.data.ticket.venta_folio
-
-    // buscamos la venta por el venta_id que guarda la cotizacion
-    // necesitamos agregar venta_id al response del index
-    const ventaId = cotizacion.venta_id
-    const ticketRes = await fetchTicket(ventaId)
-
-    ticketVentaData.value      = ticketRes.ticket
-    showModalTicketVenta.value = true
-    Swal.close()
-  } catch {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar el ticket de venta.' })
-  }
+  ticketVentaId.value        = cotizacion.venta_id
+  descargarTicketVenta.value = false
+  showModalTicketVenta.value = true
 }
 
 function abrirComprobar(cotizacion: any) {
@@ -251,13 +200,12 @@ function abrirComprobar(cotizacion: any) {
   showModalComprobar.value = true
 }
 
-function onVentaRealizada(ticket?: any) {
+function onVentaRealizada(ventaId?: number, folio?: string) {
   cargarCotizaciones()
-
-  // si viene el ticket de venta lo mostramos
-  if (ticket) {
-    descargarTicket.value = true
-    ticketVentaData.value = ticket
+  if (ventaId) {
+    ticketVentaId.value        = ventaId
+    ticketFolio.value          = folio ?? ''
+    descargarTicketVenta.value = true
     showModalTicketVenta.value = true
   }
 }
@@ -533,25 +481,23 @@ function colorStatus(status: string) {
 
   </div>
 
-  <!-- modal ticket reutilizado de ventas -->
+  <!-- ticket de cotizacion: solo muestra, sin descarga automatica -->
   <ModalTicket
-    v-if="showModalTicket && ticketData"
-    :ticket="ticketData"
+    v-if="showModalTicket && ticketCotizacionId"
+    :id="ticketCotizacionId"
     tipo="cotizacion"
-    :impresora_ancho="configuracion?.impresora_ancho ?? 80"
-    :impresora_alto="configuracion?.impresora_alto ?? 200"
-    @close="showModalTicket = false"
+    :folio="cotizaciones.find(c => c.id === ticketCotizacionId)?.folio"
+    @close="showModalTicket = false; ticketCotizacionId = null"
   />
 
-  <!-- modal ticket de venta -->
+  <!-- ticket de venta generada: descarga automatica al abrir -->
   <ModalTicket
-    v-if="showModalTicketVenta && ticketVentaData"
-    :ticket="ticketVentaData"
+    v-if="showModalTicketVenta && ticketVentaId"
+    :id="ticketVentaId"
     tipo="venta"
-    :impresora_ancho="configuracion?.impresora_ancho ?? 80"
-    :impresora_alto="configuracion?.impresora_alto ?? 200"
-    @close="showModalTicketVenta = false"
-    :auto-descargar="descargarTicket"
+    :folio="ticketFolio"
+    :descargar="descargarTicketVenta"
+    @close="showModalTicketVenta = false; ticketVentaId = null; ticketFolio = ''; descargarTicketVenta = false"
   />
 
   <!-- modal comprobar stock y convertir -->
