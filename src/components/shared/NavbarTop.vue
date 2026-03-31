@@ -29,51 +29,59 @@ defineProps<{
     }"
   >
     <div class="flex grow md:gap-4 xxl:gap-6 items-center">
-      <button
-        @click="toggleSidebar"
-        class="text-gray-600 dark:text-gray-300 hover:text-primary transition"
+  
+  <!-- Botón menú -->
+  <button
+    @click="toggleSidebar"
+    class="text-gray-600 dark:text-gray-300 hover:text-primary transition"
+  >
+    <IconMenu2 />
+  </button>
+
+  <!-- Selector de establecimiento -->
+  <div
+    class="relative hidden md:flex items-center w-full max-w-[493px]"
+  >
+    <select
+      v-model="authStore.establishmentActive"
+      class="w-full appearance-none
+             bg-white dark:bg-bg3
+             border border-gray-300 dark:border-gray-600
+             rounded-xl
+             py-2.5 md:py-3
+             pl-4 pr-10
+             text-sm font-medium
+             text-gray-700 dark:text-gray-100
+             shadow-sm
+             hover:border-primary
+             focus:ring-2 focus:ring-primary focus:border-primary
+             transition-all duration-200
+             cursor-pointer"
+    >
+      <!-- Placeholder -->
+      <option disabled value="">
+        Selecciona un establecimiento
+      </option>
+
+      <option
+        v-for="est in authStore.establishments"
+        :key="est.id"
+        :value="est.id"
       >
-        <IconMenu2 />
-      </button>
+        {{ est.nombre }}
+      </option>
+    </select>
 
-      <form
-        class="relative hidden md:flex items-center w-full max-w-[493px]
-              rounded-full px-6 xxl:px-8
-              bg-primary/5 dark:bg-bg3
-              border border-transparent
-              hover:border-primary/40
-              focus-within:border-primary
-              transition-colors"
-      >
-        <select
-          v-model="authStore.establishmentActive"
-          class="w-full pr-10 appearance-none bg-transparent
-                py-2 md:py-2.5 xxl:py-3
-                text-sm font-semibold
-                text-gray-800 dark:text-gray-100
-                focus:outline-none cursor-pointer"
-        >
-          <option
-            v-for="est in authStore.establishments"
-            :key="est.id"
-            :value="est.id"
-            class="bg-white dark:bg-bg4
-                  text-gray-800 dark:text-gray-100"
-          >
-            {{ est.nombre }}
-          </option>
-        </select>
+    <!-- Icono dropdown -->
+    <span
+      class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none
+             text-gray-400"
+    >
+      <i class="fa-solid fa-chevron-down text-xs"></i>
+    </span>
+  </div>
 
-        <!-- Font Awesome dropdown icon -->
-        <span
-          class="absolute right-5 pointer-events-none
-                text-gray-500 dark:text-gray-400"
-        >
-          <i class="fa-solid fa-chevron-down text-xs"></i>
-        </span>
-      </form>
-    </div>
-
+</div>
 
     <div class="flex items-center gap-3 sm:gap-4 xxl:gap-6">
       <ModeSwitcherVue />
