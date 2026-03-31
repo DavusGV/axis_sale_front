@@ -361,7 +361,7 @@ function cambiarPrecioServicio(producto_id: number, nuevoPrecio: number) {
   item.precio = nuevoPrecio
 }
 
-async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_final, es_credito, credito }: any) {
+async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_final, es_credito, credito, cliente_id }: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const usuario_id = user.id
   const cambio = es_credito ? 0 : pago - total_final
@@ -390,6 +390,7 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
 
   const ventaData: any = {
     usuario_id,
+    cliente_id: cliente_id ?? null,
     total: carrito.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0),
     total_final,
     pago,

@@ -291,6 +291,7 @@
   <ModalPago
     v-if="showModalPago"
     :total="calcularTotal()"
+    :clienteInicial="props.cotizacion.cliente ?? null"
     @close="showModalPago = false"
     @confirmar="confirmarVenta"
   />
@@ -722,13 +723,14 @@ function abrirPago() {
   showModalPago.value = true
 }
 
-async function confirmarVenta({ pago, metodo_pago, metodo_pago_id, total_final, es_credito, credito }: any) {
+async function confirmarVenta({ pago, metodo_pago, metodo_pago_id, total_final, es_credito, credito, cliente_id }: any) {
   const user       = JSON.parse(localStorage.getItem('user') || '{}')
   const usuario_id = user.id
 
   const detalles = items.value
     .filter(i => i.cantidad > 0)
     .map(item => ({
+      // cliente_id no va aqui, va en ventaData
       producto_id:        item.producto_id,
       cantidad:           item.cantidad,
       precio:             item.precio,
@@ -741,6 +743,8 @@ async function confirmarVenta({ pago, metodo_pago, metodo_pago_id, total_final, 
 
   const ventaData = {
     usuario_id,
+    // primero el que selecciono en ModalPago, si no el de la cotizacion
+    cliente_id:  cliente_id ?? props.cotizacion.cliente_id ?? null,
     total: detalles.reduce((acc, d) => acc + d.subtotal, 0),
     total_final,
     pago,

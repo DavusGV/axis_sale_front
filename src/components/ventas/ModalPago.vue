@@ -2,7 +2,7 @@
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
     <div
       class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full transition-all duration-300"
-      :class="esCredito ? 'max-w-3xl' : 'max-w-sm'"
+      :class="esCredito ? 'max-w-3xl' : 'max-w-md'"
     >
       <!-- encabezado -->
       <div class="flex items-center justify-between p-6 border-b dark:border-gray-700">
@@ -16,7 +16,8 @@
         </button>
       </div>
 
-      <div class="p-6" :class="esCredito ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : ''">
+      <!-- cuando es credito usamos grid de 2 columnas, contado una sola -->
+      <div class="p-6" :class="esCredito ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'flex flex-col gap-4'">
 
         <!-- columna izquierda: datos de pago (siempre visible) -->
         <div class="flex flex-col gap-4">
@@ -95,52 +96,14 @@
             </div>
           </div>
 
-          <!-- resumen credito -->
-          <div v-if="esCredito" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-sm flex flex-col gap-1">
-            <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">Total venta:</span>
-              <span class="font-medium">${{ props.total.toFixed(2) }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">Interes:</span>
-              <span class="font-medium text-orange-500">+${{ interesAplicado.toFixed(2) }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">Anticipo:</span>
-              <span class="font-medium text-green-600">-${{ (anticipo || 0).toFixed(2) }}</span>
-            </div>
-            <div class="flex justify-between border-t dark:border-gray-600 pt-1 mt-1">
-              <span class="text-gray-500 dark:text-gray-400">A financiar:</span>
-              <span class="font-bold text-blue-600">${{ totalFinanciado.toFixed(2) }}</span>
-            </div>
-            <div v-if="numPlazos > 0" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">
-                Cuota
-                <template v-if="tipoPlazo === 'dias'">cada {{ intervaloDias }} dias</template>
-                <template v-else>{{ tipoPlazo }}</template>
-                (1-{{ numPlazos - 1 }}):
-              </span>
-              <span class="font-bold text-green-600">${{ montoCuota.toFixed(2) }}</span>
-            </div>
-            <div v-if="numPlazos > 1" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">Ultimo plazo (#{{ numPlazos }}):</span>
-              <span class="font-bold text-orange-500">${{ montoUltimaCuota.toFixed(2) }}</span>
-            </div>
-            <div v-if="numPlazos > 0" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">Total a pagar:</span>
-              <span class="font-bold">${{ totalFinanciado.toFixed(2) }}</span>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- columna derecha: datos del credito (solo visible en modo credito) -->
-        <div v-if="esCredito" class="flex flex-col gap-4">
-
-          <!-- buscador de cliente -->
+          <!-- buscador de cliente: siempre visible, opcional en contado -->
           <div>
             <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
               Cliente
+              <!-- en contado se indica que es opcional -->
+              <span v-if="!esCredito" class="text-xs text-gray-400 font-normal">(opcional)</span>
+              <!-- en credito se indica que es requerido -->
+              <span v-else class="text-xs text-red-400 font-normal">*requerido</span>
             </label>
             <div class="flex gap-2">
               <div class="relative flex-1">
@@ -200,7 +163,7 @@
             </div>
           </div>
 
-          <!-- mini formulario nuevo cliente -->
+          <!-- mini formulario nuevo cliente: siempre visible cuando se activa -->
           <div
             v-if="showFormCliente"
             class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex flex-col gap-2 border dark:border-gray-600"
@@ -246,6 +209,48 @@
             </button>
           </div>
 
+          <!-- resumen credito (solo columna izquierda en credito) -->
+          <div v-if="esCredito" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-sm flex flex-col gap-1">
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Total venta:</span>
+              <span class="font-medium">${{ props.total.toFixed(2) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Interes:</span>
+              <span class="font-medium text-orange-500">+${{ interesAplicado.toFixed(2) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Anticipo:</span>
+              <span class="font-medium text-green-600">-${{ (anticipo || 0).toFixed(2) }}</span>
+            </div>
+            <div class="flex justify-between border-t dark:border-gray-600 pt-1 mt-1">
+              <span class="text-gray-500 dark:text-gray-400">A financiar:</span>
+              <span class="font-bold text-blue-600">${{ totalFinanciado.toFixed(2) }}</span>
+            </div>
+            <div v-if="numPlazos > 0" class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">
+                Cuota
+                <template v-if="tipoPlazo === 'dias'">cada {{ intervaloDias }} dias</template>
+                <template v-else>{{ tipoPlazo }}</template>
+                (1-{{ numPlazos - 1 }}):
+              </span>
+              <span class="font-bold text-green-600">${{ montoCuota.toFixed(2) }}</span>
+            </div>
+            <div v-if="numPlazos > 1" class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Ultimo plazo (#{{ numPlazos }}):</span>
+              <span class="font-bold text-orange-500">${{ montoUltimaCuota.toFixed(2) }}</span>
+            </div>
+            <div v-if="numPlazos > 0" class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Total a pagar:</span>
+              <span class="font-bold">${{ totalFinanciado.toFixed(2) }}</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- columna derecha: configuracion del plan, solo visible en credito -->
+        <div v-if="esCredito" class="flex flex-col gap-4">
+
           <!-- configuracion del plan -->
           <div class="grid grid-cols-2 gap-3">
 
@@ -266,7 +271,7 @@
               </select>
             </div>
 
-            <!-- num plazos (siempre visible) -->
+            <!-- num plazos -->
             <div>
               <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Numero de plazos
@@ -282,7 +287,7 @@
               />
             </div>
 
-            <!-- cada cuantos dias (solo visible cuando tipo_plazo es dias) -->
+            <!-- cada cuantos dias (solo cuando tipo_plazo es dias) -->
             <div v-if="tipoPlazo === 'dias'">
               <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Cada cuantos dias
@@ -346,8 +351,8 @@
             </div>
 
           </div>
-
         </div>
+
       </div>
 
       <!-- footer -->
@@ -372,7 +377,21 @@ import { buscarClientes, crearCliente } from '@/api/clientes'
 import { crearPlanPago } from '@/api/planes_pago'
 import { getMetodosPago } from '@/api/ventas'
 
-const props = defineProps(['total'])
+// interfaz del cliente
+interface Cliente {
+  id: number
+  nombre: string
+  apellido_p: string
+  apellido_m?: string
+  telefono1: string
+  foto?: string
+}
+
+const props = defineProps({
+  total:          { type: Number, required: true },
+  clienteInicial: { type: Object as () => Cliente | null, default: null }
+})
+
 const emits = defineEmits(['close', 'confirmar'])
 
 const loading = ref(false)
@@ -391,18 +410,9 @@ const interesTipo     = ref('')
 const interesValor    = ref(0)
 const fechaInicio     = ref(new Date().toISOString().split('T')[0])
 
-// interfaz del cliente
-interface Cliente {
-  id: number
-  nombre: string
-  apellido_p: string
-  apellido_m?: string
-  telefono1: string
-  foto?: string
-}
 // cliente
 const searchCliente       = ref('')
-const resultadosCliente = ref<Cliente[]>([])
+const resultadosCliente   = ref<Cliente[]>([])
 const clienteSeleccionado = ref<Cliente | null>(null)
 const showFormCliente     = ref(false)
 const loadingCliente      = ref(false)
@@ -431,13 +441,13 @@ const totalFinanciado = computed(() => {
   return Math.max(result, 0)
 })
 
-// cuota redondeada hacia arriba para evitar centavos
+// cuota redondeada hacia abajo para evitar centavos en plazos intermedios
 const montoCuota = computed(() => {
   if (!numPlazos.value || numPlazos.value <= 0) return 0
   return Math.floor(totalFinanciado.value / numPlazos.value)
 })
 
-// pago el ultimo plazo
+// el ultimo plazo absorbe el residuo del redondeo
 const montoUltimaCuota = computed(() => {
   if (!numPlazos.value || numPlazos.value <= 0) return 0
   return totalFinanciado.value - (montoCuota.value * (numPlazos.value - 1))
@@ -457,9 +467,20 @@ onMounted(async () => {
   } catch {
     metodosPago.value = []
   }
+
+  // pre-seleccionamos el cliente si viene desde una cotizacion
+  if (props.clienteInicial) {
+    // normalizamos por si viene con apellido en lugar de apellido_p
+    clienteSeleccionado.value = {
+      id:         props.clienteInicial.id,
+      nombre:     props.clienteInicial.nombre,
+      apellido_p: props.clienteInicial.apellido_p ?? props.clienteInicial.apellido_p ?? '',
+      telefono1:  props.clienteInicial.telefono1 ?? props.clienteInicial.telefono1 ?? '',
+    }
+  }
 })
 
-// funcion para manejar el cambio de metodo
+// funcion para manejar el cambio de metodo de pago
 function onMetodoPagoChange(id: number) {
   const metodo = metodosPago.value.find(m => m.id === id)
   if (metodo) {
@@ -468,12 +489,12 @@ function onMetodoPagoChange(id: number) {
   }
 }
 
-// limpiamos interes cuando se quita el tipo
+// limpiamos el valor del interes cuando se quita el tipo
 watch(interesTipo, (val) => {
   if (!val) interesValor.value = 0
 })
 
-// busqueda de clientes con debounce
+// busqueda de clientes con debounce para no saturar el backend
 function onBuscarCliente() {
   if (clienteSeleccionado.value) return
   clearTimeout(buscarTimeout)
@@ -493,14 +514,14 @@ function onBuscarCliente() {
 
 function seleccionarCliente(cliente: Cliente) {
   clienteSeleccionado.value = cliente
-  searchCliente.value = ''
-  resultadosCliente.value = []
-  showFormCliente.value = false
+  searchCliente.value       = ''
+  resultadosCliente.value   = []
+  showFormCliente.value     = false
 }
 
 function limpiarCliente() {
   clienteSeleccionado.value = null
-  searchCliente.value = ''
+  searchCliente.value       = ''
 }
 
 async function registrarNuevoCliente() {
@@ -508,7 +529,7 @@ async function registrarNuevoCliente() {
     Swal.fire({
       icon: 'warning',
       title: 'Campos requeridos',
-      text: 'Nombre, apellido paterno y telefono son obligatorios.',
+      text: 'Nombre, apellido paterno y teléfono son obligatorios.',
       confirmButtonColor: '#ef4444'
     })
     return
@@ -525,7 +546,7 @@ async function registrarNuevoCliente() {
     // seleccionamos automaticamente el cliente recien creado
     seleccionarCliente(res.cliente)
     showFormCliente.value = false
-    nuevoCliente.value = { nombre: '', apellido_p: '', telefono1: '', email: '' }
+    nuevoCliente.value    = { nombre: '', apellido_p: '', telefono1: '', email: '' }
 
     Swal.fire({
       icon: 'success',
@@ -547,7 +568,8 @@ async function registrarNuevoCliente() {
 }
 
 async function confirmarVenta() {
-  // validaciones contado
+
+  // validaciones de contado
   if (!esCredito.value) {
     if (!pago.value || isNaN(pago.value)) {
       Swal.fire({ icon: 'warning', title: 'Monto requerido', text: 'Ingresa el monto recibido.', confirmButtonColor: '#ef4444' })
@@ -558,24 +580,26 @@ async function confirmarVenta() {
       return
     }
 
+    // cliente opcional en contado: se envia si fue seleccionado, null si no
     emits('confirmar', {
-      pago: pago.value,
-      metodo_pago: metodo_pago.value,
+      pago:           pago.value,
+      metodo_pago:    metodo_pago.value,
       metodo_pago_id: metodo_pago_id.value,
-      total_final: props.total,
-      es_credito: false
+      total_final:    props.total,
+      es_credito:     false,
+      cliente_id:     clienteSeleccionado.value?.id ?? null,
     })
     return
   }
 
-  // validaciones credito
+  // validaciones de credito
   if (!clienteSeleccionado.value) {
-    Swal.fire({ icon: 'warning', title: 'Cliente requerido', text: 'Selecciona o registra un cliente para el credito.', confirmButtonColor: '#ef4444' })
+    Swal.fire({ icon: 'warning', title: 'Cliente requerido', text: 'Selecciona o registra un cliente para el crédito.', confirmButtonColor: '#ef4444' })
     return
   }
 
   if (tipoPlazo.value === 'dias' && (!intervaloDias.value || intervaloDias.value <= 0)) {
-    Swal.fire({ icon: 'warning', title: 'Intervalo requerido', text: 'Ingresa cada cuantos dias se cobra.', confirmButtonColor: '#ef4444' })
+    Swal.fire({ icon: 'warning', title: 'Intervalo requerido', text: 'Ingresa cada cuántos días se cobra.', confirmButtonColor: '#ef4444' })
     return
   }
 
@@ -585,20 +609,23 @@ async function confirmarVenta() {
   }
 
   emits('confirmar', {
-    pago: anticipo.value || 0,
-    metodo_pago: metodo_pago.value,
-    metodo_pago_id: metodo_pago_id.value, 
-    total_final: props.total,
-    es_credito: true,
+    pago:           anticipo.value || 0,
+    metodo_pago:    metodo_pago.value,
+    metodo_pago_id: metodo_pago_id.value,
+    total_final:    props.total,
+    es_credito:     true,
+    // en credito el cliente va dentro del objeto credito (para el plan de pago)
+    // y tambien como cliente_id directo en la venta
+    cliente_id: clienteSeleccionado.value.id,
     credito: {
-      cliente_id:    clienteSeleccionado.value.id,
-      anticipo:      anticipo.value || 0,
-      interes_tipo:  interesTipo.value || null,
-      interes_valor: interesValor.value || 0,
-      num_plazos:    numPlazos.value,
-      tipo_plazo:    tipoPlazo.value,
+      cliente_id:     clienteSeleccionado.value.id,
+      anticipo:       anticipo.value || 0,
+      interes_tipo:   interesTipo.value || null,
+      interes_valor:  interesValor.value || 0,
+      num_plazos:     numPlazos.value,
+      tipo_plazo:     tipoPlazo.value,
       intervalo_dias: tipoPlazo.value === 'dias' ? intervaloDias.value : null,
-      fecha_inicio:  fechaInicio.value,
+      fecha_inicio:   fechaInicio.value,
     }
   })
 }
