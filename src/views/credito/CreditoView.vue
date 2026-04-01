@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 interface PlanPago {
   id: number
   cliente: { nombre: string; apellido_p: string; telefono1: string }
-  venta: { id: number }
+  venta: { id: number; folio: string | null }
   total_venta: number
   total_a_pagar: number
   total_financiado: number
@@ -188,6 +188,7 @@ function formatFecha(fecha: string) {
 function etiquetaEstado(estado: string) {
   const map: Record<string, string> = {
     activo:    'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+    atrasado:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
     liquidado: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
     vencido:   'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
     cancelado: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
@@ -219,7 +220,7 @@ function calcularCuota(plan: any): string {
         <input
           v-model="filtros.search"
           type="text"
-          placeholder="Buscar cliente..."
+          placeholder="Buscar por cliente o folio..."
           class="block pl-9 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
                 bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
                 focus:ring-1 focus:ring-green-400 transition text-sm"
@@ -240,6 +241,7 @@ function calcularCuota(plan: any): string {
         >
           <option value="">Todos los estados</option>
           <option value="activo">Activo</option>
+          <option value="atrasado">Atrasado</option>
           <option value="liquidado">Liquidado</option>
           <option value="vencido">Vencido</option>
           <option value="cancelado">Cancelado</option>
@@ -315,7 +317,7 @@ function calcularCuota(plan: any): string {
 
         <!-- venta -->
         <template v-else-if="column.key === 'venta'">
-          #{{ item.venta?.id }}
+          {{ item.venta?.folio ?? '#' + item.venta?.id }}
         </template>
 
         <!-- total a pagar -->

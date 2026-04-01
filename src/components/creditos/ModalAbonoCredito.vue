@@ -377,7 +377,7 @@ async function seleccionarCliente(cliente: Cliente) {
     const res = await fetchPlanesPorCliente(cliente.id)
     // filtramos los cancelados y liquidados, solo mostramos planes con saldo
     const todos = res.data ?? res ?? []
-    planesCliente.value = todos.filter((p: any) => p.estado === 'activo' || p.estado === 'vencido')
+    planesCliente.value = todos.filter((p: any) => ['activo', 'atrasado', 'vencido'].includes(p.estado))
   } finally {
     loadingPlanes.value = false
   }

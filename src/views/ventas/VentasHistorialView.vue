@@ -190,7 +190,9 @@ async function confirmarCancelar(venta: any) {
 
 function colorStatus(status: string) {
   if (status === 'vendido')   return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-  if (status === 'cancelada') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  if (status === 'pendiente') return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+  if (status === 'no_pagado') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  if (status === 'cancelada') return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
   return 'bg-gray-100 text-gray-600'
 }
 
@@ -291,16 +293,18 @@ async function descargarPdf() {
         <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
           <i class="fa-solid fa-filter text-gray-400 text-xs"></i>
         </span>
-        <select
-          v-model="filtros.status"
-          class="block pl-9 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
-                bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
-                focus:ring-1 focus:ring-green-400 transition text-sm"
-        >
-          <option value="">Todos</option>
-          <option value="vendido">Vendido</option>
-          <option value="cancelada">Cancelada</option>
-        </select>
+          <select
+            v-model="filtros.status"
+            class="block pl-9 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
+                  bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                  focus:ring-1 focus:ring-green-400 transition text-sm"
+          >
+            <option value="">Todos</option>
+            <option value="vendido">Vendido</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="no_pagado">No pagado</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
       </div>
 
       <!-- fecha desde -->
