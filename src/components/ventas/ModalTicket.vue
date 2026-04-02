@@ -6,7 +6,12 @@
       <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
         <h2 class="font-bold text-lg flex items-center gap-2">
           <i class="fa-solid fa-receipt"></i>
-          {{ props.tipo === 'cotizacion' ? 'Ticket de cotizacion' : 'Ticket de venta' }}
+          {{
+            props.tipo === 'cotizacion' ? 'Ticket de cotizacion'
+            : props.tipo === 'credito'  ? 'Ticket de credito'
+            : props.tipo === 'abono'    ? 'Ticket de abono'
+            : 'Ticket de venta'
+          }}
         </h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
           <i class="fa-solid fa-xmark text-xl"></i>
@@ -69,9 +74,10 @@ import axiosInstance from '@/utils/axios'
 
 const props = defineProps<{
   id: number
-  tipo: 'venta' | 'cotizacion'
+  tipo: 'venta' | 'cotizacion' | 'credito' | 'abono'
   descargar?: boolean // descarga automatica
   folio?: string  // folio real para el nombre del archivo descargado
+  pagoId?: number
 }>()
 
 defineEmits(['close'])
@@ -100,9 +106,16 @@ async function cargarPdf() {
 
   try {
     // determinamos el endpoint segun el tipo
-    const ruta = props.tipo === 'cotizacion'
-      ? `/cotizaciones/${props.id}/ticket-pdf`
-      : `/ventas/${props.id}/ticket-pdf`
+    let ruta = ''
+    if (props.tipo === 'cotizacion') {
+      ruta = `/cotizaciones/${props.id}/ticket-pdf`
+    } else if (props.tipo === 'credito') {
+      ruta = `/planes-pago/${props.id}/ticket-pdf`
+    } else if (props.tipo === 'abono') {
+      ruta = `/planes-pago/${props.id}/pagos/${props.pagoId}/ticket-pdf`
+    } else {
+      ruta = `/ventas/${props.id}/ticket-pdf`
+    }
 
     const res = await axiosInstance.get(ruta, { responseType: 'blob' })
 

@@ -127,6 +127,13 @@
                 <i class="fa-solid fa-hand-holding-dollar"></i>
                 {{ showFormAbono ? 'Cancelar' : 'Registrar abono' }}
               </button>
+              <button
+                class="btn-outline w-full flex items-center justify-center gap-2 text-sm"
+                @click="abrirTicketCredito"
+              >
+                <i class="fa-solid fa-receipt"></i>
+                Ticket de credito
+              </button>
             </div>
 
           </div>
@@ -236,6 +243,7 @@
                     <th class="px-3 py-2 text-left">Fecha</th>
                     <th class="px-3 py-2 text-left">Metodo</th>
                     <th class="px-3 py-2 text-left">Notas</th>
+                    <th class="px-3 py-2 text-left">Ticket</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -265,6 +273,15 @@
                     <td class="px-3 py-2 text-gray-400 text-xs">
                       {{ pago.notas ?? '—' }}
                     </td>
+                    <td class="px-3 py-2">
+                      <button
+                        class="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                        @click="abrirTicketAbono(pago)"
+                      >
+                        <i class="fa-solid fa-receipt text-xs"></i>
+                        Ver
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -275,6 +292,13 @@
       </div>
     </div>
   </div>
+  <ModalTicket
+    v-if="showTicket"
+    :id="planLocal.id"
+    :tipo="ticketTipo"
+    :pagoId="ticketPagoId"
+    @close="showTicket = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -282,6 +306,7 @@ import { ref, computed, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { fetchPagosPlan, fetchPlanPago, registrarAbono } from '@/api/planes_pago'
 import { getMetodosPago } from '@/api/ventas'
+import ModalTicket from '@/components/ventas/ModalTicket.vue'
 
 interface PlanPago {
   id: number
@@ -333,6 +358,11 @@ const montoAbono = ref<number | undefined>(undefined)
 const metodoPago    = ref<string>('')
 const metodoPagoId  = ref<number | null>(null)
 const notas = ref('')
+
+// control del modal de ticket
+const showTicket          = ref(false)
+const ticketTipo          = ref<'credito' | 'abono'>('credito')
+const ticketPagoId        = ref<number | undefined>(undefined)
 
 const nombreCliente = computed(() =>
   `${planLocal.value.cliente?.nombre ?? ''} ${planLocal.value.cliente?.apellido_p ?? ''}`.trim()
@@ -456,6 +486,12 @@ async function confirmarAbono() {
     // notificamos al padre para que refresque la lista
     emits('abonado')
 
+    // abrimos el ticket del abono recien registrado
+    const pagoNuevo = pagos.value[pagos.value.length - 1]
+    if (pagoNuevo) {
+      abrirTicketAbono(pagoNuevo)
+    }
+
     if (estado === 'liquidado') {
       Swal.fire({
         icon: 'success',
@@ -485,6 +521,18 @@ async function confirmarAbono() {
   } finally {
     loadingAbono.value = false
   }
+}
+
+function abrirTicketCredito() {
+  ticketTipo.value   = 'credito'
+  ticketPagoId.value = undefined
+  showTicket.value   = true
+}
+
+function abrirTicketAbono(pago: PagoPlan) {
+  ticketTipo.value   = 'abono'
+  ticketPagoId.value = pago.id
+  showTicket.value   = true
 }
 
 // formatea fechas ISO o date strings a formato legible en espanol

@@ -271,6 +271,13 @@
 
     </div>
   </div>
+  <ModalTicket
+    v-if="showTicketAbono && ticketPlanId && ticketPagoId"
+    :id="ticketPlanId"
+    tipo="abono"
+    :pagoId="ticketPagoId"
+    @close="showTicketAbono = false; $emit('close')"
+  />
 </template>
 
 <script setup lang="ts">
@@ -279,6 +286,7 @@ import Swal from 'sweetalert2'
 import { buscarClientes } from '@/api/clientes'
 import { fetchPlanesPorCliente, registrarAbono } from '@/api/planes_pago'
 import { getMetodosPago } from '@/api/ventas'
+import ModalTicket from '@/components/ventas/ModalTicket.vue'
 
 interface Cliente {
   id: number
@@ -324,6 +332,9 @@ const metodosPago   = ref<{ id: number; nombre: string }[]>([])
 const metodoPagoId  = ref<number | null>(null)
 const notas = ref('')
 const loadingAbono = ref(false)
+const showTicketAbono  = ref(false)
+const ticketPlanId     = ref<number | undefined>(undefined)
+const ticketPagoId     = ref<number | undefined>(undefined)
 
 // validacion reactiva del monto
 const montoValido = computed(() => {
@@ -452,6 +463,13 @@ async function confirmarAbono() {
 
     emits('abonado')
 
+    const pagoId = res.data?.pago?.id ?? res.pago?.id
+    if (pagoId && planSeleccionado.value) {
+      ticketPlanId.value    = planSeleccionado.value.id
+      ticketPagoId.value    = pagoId
+      showTicketAbono.value = true
+    }
+
     if (estado === 'liquidado') {
       Swal.fire({
         icon: 'success',
@@ -472,8 +490,6 @@ async function confirmarAbono() {
         confirmButtonColor: '#22c55e'
       })
     }
-
-    emits('close')
 
   } catch (e: any) {
     const mensaje = e?.response?.data?.message

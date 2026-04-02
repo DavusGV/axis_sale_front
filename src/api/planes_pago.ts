@@ -33,4 +33,18 @@ export const fetchPlanesPorCliente = async (clienteId: number) => {
   return res.data
 }
 
+export const descargarTicketCredito = async (planId: number): Promise<Blob> => {
+  const res = await axiosInstance.get(`planes-pago/${planId}/ticket-pdf`, {
+    responseType: 'blob'
+  })
+  return res.data
+}
+
+export const descargarTicketAbono = async (planId: number, pagoId: number): Promise<Blob> => {
+  const res = await axiosInstance.get(`planes-pago/${planId}/pagos/${pagoId}/ticket-pdf`, {
+    responseType: 'blob'
+  })
+  return res.data
+}
+
 export { getMetodosPago }
