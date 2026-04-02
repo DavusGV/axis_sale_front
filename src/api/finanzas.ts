@@ -137,3 +137,24 @@ export async function exportBalancePdf(params: { fecha_inicio: string; fecha_fin
   })
   return res
 }
+
+export interface filterMovimientos {
+  idestablishment: number
+  month: number
+  year: number
+  page?: number
+  per_page?: number
+}
+
+export async function fetchMovimientos(params: filterMovimientos) {
+  const res = await axiosInstance.get('/finance/getMovimientos', {
+    params: {
+      idestablishment: params.idestablishment,
+      month:           params.month,
+      year:            params.year,
+      page:            params.page ?? 1,
+      per_page:        params.per_page ?? 20,
+    }
+  })
+  return res.data.data
+}

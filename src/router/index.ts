@@ -118,6 +118,7 @@ import ContizacionView from '@/views/ventas/ContizacionView.vue';
 import VentasHistorialView from '@/views/ventas/VentasHistorialView.vue';
 import PersonalThreeVue from '@/views/dashboards/PersonalThree.vue';
 import CategoriaView from '@/views/products/CategoriaView.vue';
+import MovimientosView from '@/views/finanzas/MovimientosView.vue';
 
 
 const router = createRouter({
@@ -818,6 +819,12 @@ const router = createRouter({
       path: '/Finanzas/ingresos',
       name: 'ingresos',
       component:  IngresosView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/Finanzas/movimientos',
+      name: 'MovimientosIngresos',
+      component:  MovimientosView,
       meta: { requiresAuth: true } 
     },
     {

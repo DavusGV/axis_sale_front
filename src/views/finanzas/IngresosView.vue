@@ -161,6 +161,20 @@ onMounted(async () => {
   </select>
 </div>
 
+    <!-- boton para ver detalle de movimientos del mes -->
+      <router-link
+        :to="{ name: 'MovimientosIngresos', query: { month: month, year: year } }"
+        class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium
+               rounded-xl border border-gray-300 dark:border-gray-600
+               bg-gray-50 dark:bg-gray-700
+               text-gray-700 dark:text-gray-200
+               hover:bg-green-50 hover:border-green-400 hover:text-green-600
+               dark:hover:bg-green-900/20 dark:hover:text-green-400
+               transition whitespace-nowrap"
+      >
+        <i class="fas fa-list-ul text-[11px]"></i>
+        Ver movimientos
+      </router-link>
     </div>
     <Ingresos :income="income" :methodpay="methodpay" v-if="!load"/>
 </template>
