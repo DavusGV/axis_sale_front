@@ -544,7 +544,7 @@ async function registrarNuevoCliente() {
 
     const res = await crearCliente(data)
     // seleccionamos automaticamente el cliente recien creado
-    seleccionarCliente(res.cliente)
+    seleccionarCliente(res.data.cliente)
     showFormCliente.value = false
     nuevoCliente.value    = { nombre: '', apellido_p: '', telefono1: '', email: '' }
 

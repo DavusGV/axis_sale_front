@@ -324,7 +324,9 @@ async function cargarDatos() {
 
     // usamos los detalles que ya vienen en el prop venta
     const metodoActual = metodosPago.value.find(
-      (m: any) => m.id === props.venta.metodo_pago_id
+      (m: any) => Number(m.id) === Number(props.venta.metodo_pago_id)
+    ) ?? metodosPago.value.find(
+      (m: any) => m.nombre.toLowerCase() === (props.venta.metodo_pago ?? '').toLowerCase()
     )
     metodoPagoId.value         = metodoActual?.id ?? metodosPago.value[0]?.id ?? null
     metodoPagoNombre.value     = metodoActual?.nombre ?? props.venta.metodo_pago ?? ''

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import TopBanner from '@/components/shared/TopBanner.vue'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-vue'
+import DataTable from '@/components/plantillas/DataTable.vue'
 import { ref, watch, onMounted } from 'vue'
 import ModalAddCliente from '@/components/clientes/ModalAddCliente.vue'
 import { fetchClientes, eliminarCliente } from '@/api/clientes'
@@ -13,6 +14,9 @@ const search = ref('')
 const page = ref(1)
 const lastPage = ref(1)
 const loading = ref(false)
+const totalItems = ref(0)
+const startIndex = ref(0)
+const endIndex   = ref(0)
 
 const showModal = ref(false)
 const clienteSeleccionado = ref<any>(null)
@@ -41,11 +45,28 @@ const loadClientes = async () => {
     const res = await fetchClientes({ page: page.value, search: search.value })
     clientes.value = res.data
     lastPage.value = res.last_page
-    page.value = res.current_page
+    page.value     = res.current_page
+    totalItems.value = res.total
+    startIndex.value = (res.current_page - 1) * (res.per_page ?? 15)
+    endIndex.value   = startIndex.value + res.data.length - 1
   } finally {
     loading.value = false
   }
 }
+
+const columns = [
+  { key: 'nombre',    label: 'Cliente'       },
+  { key: 'telefono1', label: 'Teléfono'      },
+  { key: 'email',     label: 'Email'         },
+  { key: 'genero',    label: 'Género'        },
+  { key: 'total_ventas',            label: 'Ventas'        },
+  { key: 'cotizaciones_pendientes', label: 'Cotizaciones'  },
+  { key: 'creditos_activos',        label: 'Créditos'      },
+]
+
+const paginate  = (p: number) => { page.value = p; loadClientes() }
+const nextPage  = () => { if (page.value < lastPage.value) { page.value++; loadClientes() } }
+const prevPage  = () => { if (page.value > 1) { page.value--; loadClientes() } }
 
 function abrirModalNuevo() {
   clienteSeleccionado.value = null
@@ -100,7 +121,8 @@ async function confirmarEliminar(cliente: any) {
     Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: e?.response?.data?.message || 'No se pudo eliminar el cliente.'
+      text: e?.response?.data?.data || e?.response?.data?.message || 'No se pudo eliminar el cliente.',
+      confirmButtonColor: '#3b82f6'
     })
   }
 }
@@ -151,124 +173,118 @@ function nombreCompleto(cliente: any) {
     </div>
 
     <!-- tabla -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs">
-          <tr>
-            <th class="px-4 py-3 text-left">Cliente</th>
-            <th class="px-4 py-3 text-left">Telefono</th>
-            <th class="px-4 py-3 text-left">Email</th>
-            <th class="px-4 py-3 text-left">Genero</th>
-            <th class="px-4 py-3 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="loading">
-            <td colspan="5" class="px-4 py-8 text-center text-gray-400">
-              Cargando...
-            </td>
-          </tr>
-          <tr v-else-if="!clientes.length">
-            <td colspan="5" class="px-4 py-8 text-center text-gray-400">
-              <i class="fa-regular fa-face-sad-tear text-lg"></i>
-              <p>No hay clientes registrados</p>
-            </td>
-          </tr>
-          <tr
-            v-for="cliente in clientes"
-            :key="cliente.id"
-            class="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+    <DataTable
+      :items="clientes"
+      :columns="columns"
+      :currentPage="page"
+      :totalPages="lastPage"
+      :total="totalItems"
+      :startIndex="startIndex"
+      :endIndex="endIndex"
+      :paginate="paginate"
+      :nextPage="nextPage"
+      :prevPage="prevPage"
+    >
+      <template #cell="{ item, column, value }">
+
+        <!-- cliente con foto y nombre completo -->
+        <template v-if="column.key === 'nombre'">
+          <div class="flex items-center gap-3">
+            <img
+              v-if="item.foto"
+              :src="`/storage/${item.foto}`"
+              class="w-9 h-9 rounded-full object-cover"
+            />
+            <div
+              v-else
+              class="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
+            >
+              <i class="fa-solid fa-user text-gray-400 text-sm"></i>
+            </div>
+            <span class="font-medium">{{ nombreCompleto(item) }}</span>
+          </div>
+        </template>
+
+        <!-- telefono con segundo numero si existe -->
+        <template v-else-if="column.key === 'telefono1'">
+          <span>{{ item.telefono1 }}</span>
+          <span v-if="item.telefono2" class="text-xs text-gray-400 block">{{ item.telefono2 }}</span>
+        </template>
+
+        <!-- email -->
+        <template v-else-if="column.key === 'email'">
+          {{ item.email ?? '—' }}
+        </template>
+
+        <!-- genero -->
+        <template v-else-if="column.key === 'genero'">
+          <span class="capitalize">{{ item.genero ?? '—' }}</span>
+        </template>
+
+        <!-- ventas realizadas -->
+        <template v-else-if="column.key === 'total_ventas'">
+          <span
+            class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold"
+            :class="item.total_ventas > 0
+              ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+              : 'bg-gray-100 text-gray-400 dark:bg-gray-700'"
           >
-            <!-- foto y nombre -->
-            <td class="px-4 py-3">
-              <div class="flex items-center gap-3">
-                <img
-                  v-if="cliente.foto"
-                  :src="`/storage/${cliente.foto}`"
-                  class="w-9 h-9 rounded-full object-cover"
-                />
-                <div
-                  v-else
-                  class="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
-                >
-                  <i class="fa-solid fa-user text-gray-400 text-sm"></i>
-                </div>
-                <span class="font-medium text-gray-800 dark:text-gray-100">
-                  {{ nombreCompleto(cliente) }}
-                </span>
-              </div>
-            </td>
-            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
-              {{ cliente.telefono1 }}
-              <span v-if="cliente.telefono2" class="text-xs text-gray-400 block">
-                {{ cliente.telefono2 }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
-              {{ cliente.email ?? '—' }}
-            </td>
-            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 capitalize">
-              {{ cliente.genero ?? '—' }}
-            </td>
-            <td class="px-4 py-3">
-              <div class="flex items-center justify-center gap-2">
-                <button
-                  class="w-8 h-8 flex items-center justify-center rounded-full
-                         bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300
-                         hover:bg-blue-200 dark:hover:bg-blue-800 transition"
-                  @click="abrirModalEditar(cliente)"
-                  title="Editar"
-                >
-                  <i class="fa-solid fa-pen text-xs"></i>
-                </button>
-                <button
-                  class="w-8 h-8 flex items-center justify-center rounded-full
-                         bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300
-                         hover:bg-red-200 dark:hover:bg-red-800 transition"
-                  @click="confirmarEliminar(cliente)"
-                  title="Eliminar"
-                >
-                  <i class="fa-solid fa-trash text-xs"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            {{ item.total_ventas }}
+          </span>
+        </template>
 
-    <!-- paginacion -->
-    <div class="flex justify-center items-center gap-3 mt-6 select-none">
-      <button
-        @click="page--; loadClientes()"
-        :disabled="page <= 1"
-        class="btn"
-      >
-        <IconChevronLeft />
-      </button>
+        <!-- cotizaciones pendientes -->
+        <template v-else-if="column.key === 'cotizaciones_pendientes'">
+          <span
+            class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold"
+            :class="item.cotizaciones_pendientes > 0
+              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+              : 'bg-gray-100 text-gray-400 dark:bg-gray-700'"
+          >
+            {{ item.cotizaciones_pendientes }}
+          </span>
+        </template>
 
-      <div class="flex gap-2">
+        <!-- creditos activos -->
+        <template v-else-if="column.key === 'creditos_activos'">
+          <span
+            class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold"
+            :class="item.creditos_activos > 0
+              ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+              : 'bg-gray-100 text-gray-400 dark:bg-gray-700'"
+          >
+            {{ item.creditos_activos }}
+          </span>
+        </template>
+
+        <template v-else>
+          {{ value ?? '—' }}
+        </template>
+
+      </template>
+
+      <template #actions="{ item }">
         <button
-          v-for="num in lastPage"
-          :key="num"
-          @click="page = num; loadClientes()"
-          :class="['btn', page === num
-            ? 'border-green-600 text-white shadow-lg scale-110'
-            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
-          ]"
+          class="w-8 h-8 flex items-center justify-center rounded-full
+                bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300
+                hover:bg-blue-200 dark:hover:bg-blue-800 transition"
+          title="Editar"
+          @click="abrirModalEditar(item)"
         >
-          {{ num }}
+          <i class="fa-solid fa-pen text-xs"></i>
         </button>
-      </div>
+        <button
+          class="w-8 h-8 flex items-center justify-center rounded-full
+                bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300
+                hover:bg-red-200 dark:hover:bg-red-800 transition"
+          title="Eliminar"
+          @click="confirmarEliminar(item)"
+        >
+          <i class="fa-solid fa-trash text-xs"></i>
+        </button>
+      </template>
 
-      <button
-        @click="page++; loadClientes()"
-        :disabled="page >= lastPage"
-        class="btn"
-      >
-        <IconChevronRight />
-      </button>
-    </div>
+    </DataTable>
 
   </div>
 

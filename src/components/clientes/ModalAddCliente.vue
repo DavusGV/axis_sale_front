@@ -272,10 +272,16 @@ async function guardar() {
 
     emits('guardado')
   } catch (e) {
+    const errores = e?.response?.data?.errors
+    const mensaje = errores
+      ? Object.values(errores).flat().join('\n')
+      : e?.response?.data?.data || e?.response?.data?.message || 'No se pudo guardar el cliente.'
+
     Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: e?.response?.data?.message || 'No se pudo guardar el cliente.'
+      text: mensaje,
+      confirmButtonColor: '#3b82f6'
     })
   } finally {
     loading.value = false

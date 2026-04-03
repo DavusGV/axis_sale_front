@@ -29,13 +29,42 @@ const exportando = ref<'excel' | 'pdf' | null>(null)
 // dropdown
 const dropdownAbierto = ref<number | string | null>(null)
 const dropdownRefs    = ref<Record<string, HTMLElement | null>>({})
+const dropdownStyle = ref<Record<string, string>>({})
 
 function setDropdownRef(el: any, id: number | string) {
   if (el) dropdownRefs.value[id] = el
 }
 
 function toggleDropdown(id: number | string) {
-  dropdownAbierto.value = dropdownAbierto.value === id ? null : id
+  if (dropdownAbierto.value === id) {
+    dropdownAbierto.value = null
+    return
+  }
+
+  dropdownAbierto.value = id
+
+  const refEl = dropdownRefs.value[id]
+  if (!refEl) return
+
+  const rect = refEl.getBoundingClientRect()
+  const spaceAbove = rect.top
+  const spaceBelow = window.innerHeight - rect.bottom
+
+  dropdownStyle.value = {}
+
+  if (spaceAbove > spaceBelow) {
+    // abre hacia arriba
+    dropdownStyle.value = {
+      bottom: `${window.innerHeight - rect.bottom}px`,
+      right:  `${window.innerWidth - rect.left + 4}px`,
+    }
+  } else {
+    // abre hacia abajo
+    dropdownStyle.value = {
+      top:   `${rect.top}px`,
+      right: `${window.innerWidth - rect.left + 4}px`,
+    }
+  }
 }
 
 function cerrarDropdown() {
@@ -437,9 +466,9 @@ async function descargarPdf() {
 
           <ul
             v-show="dropdownAbierto === item.id"
-            class="absolute right-full mr-1 border text-sm z-30 dark:border-gray-600
-                   min-w-[170px] p-1.5 rounded-md bg-white dark:bg-gray-800 shadow-lg"
-            :class="{ 'bottom-0': index >= ventas.length - 2 }"
+            class="fixed border text-sm z-50 dark:border-gray-600
+                  min-w-[170px] p-1.5 rounded-md bg-white dark:bg-gray-800 shadow-lg"
+            :style="dropdownStyle"
           >
             <!-- ver ticket -->
             <li>
