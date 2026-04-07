@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import Swal from 'sweetalert2'
 import FlexTable from '@/components/flex/FlexTable.vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
-import { fetchProducts, type ProductFilters, DestroyProduct } from '@/api/products'
+import { fetchProducts, type ProductFilters, DestroyProduct, fetchCategories } from '@/api/products'
 import { useAuthStore } from '@/stores/authStore'
 import ProductModal from '@/components/products/ProductsModal.vue'
 
@@ -18,6 +18,9 @@ const loading = ref(false)
 const startIndex = ref(0)
 const endIndex = ref(0)
 const totalPages = ref(1)
+// catalogo y filtro de categoria
+const categorias = ref<any[]>([])
+const categoriaSeleccionada = ref<string | number>('')
 
 const authStore = useAuthStore()
 
@@ -33,6 +36,7 @@ const columns = [
   //{ key: 'iva', label: 'IVA (%)' },
   { key: 'stock', label: 'Stock' },
   { key: 'categoria', label: 'Categoría' },
+  { key: 'unidad_medida', label: 'Unidad de Medida' },
 ]
 
 const params = ref({
@@ -47,6 +51,16 @@ const pagination = ref({
   current_page: 1,
   last_page: 1
 })
+
+// cargamos el catalogo de categorias para el filtro
+async function loadCategorias() {
+  try {
+    const res = await fetchCategories()
+    categorias.value = res.categories || res.data?.categories || []
+  } catch (e) {
+    categorias.value = []
+  }
+}
 
 // aqui mostramos los datos con filtros y paginacion
 async function loadProducts() {
@@ -79,6 +93,14 @@ function handleSearch(event: any) {
   currentPage.value = 1
   loadProducts()
 }
+
+// cuando cambia la categoria seleccionada recargamos desde la pagina 1
+watch(categoriaSeleccionada, (nuevoValor) => {
+  params.value.categoria_id = nuevoValor === null ? '' : String(nuevoValor)
+  params.value.page = 1
+  currentPage.value = 1
+  loadProducts()
+})
 
 // la paginacion 
 const nextPage = () => {
@@ -178,7 +200,10 @@ watch(
   }
 )
 
-onMounted(loadProducts)
+onMounted(async () => {
+  await loadCategorias()
+  await loadProducts()
+})
 </script>
 
 <template>
@@ -190,6 +215,35 @@ onMounted(loadProducts)
       </button>
     </div>
   </TopBanner>
+  <div class="box mb-4 flex flex-wrap items-center gap-3 py-3 px-5">
+    <div class="relative flex-1 min-w-[220px] max-w-xs">
+      <i class="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+
+      <select
+        v-model="categoriaSeleccionada"
+        class="w-full appearance-none border border-gray-300 dark:border-gray-700
+              bg-white dark:bg-bg4 dark:text-gray-100
+              rounded-lg pl-9 pr-9 py-2 text-sm
+              focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+      >
+        <option value="">Todas las categorias</option>
+        <option v-for="cat in categorias" :key="cat.id" :value="cat.id">
+          {{ cat.nombre }}
+        </option>
+      </select>
+
+      <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+    </div>
+
+    <span
+      v-if="categoriaSeleccionada"
+      class="ml-auto inline-flex items-center gap-2 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full cursor-pointer hover:bg-primary/20 transition"
+      @click="categoriaSeleccionada = ''"
+    >
+      Limpiar filtro
+      <i class="fa-solid fa-xmark"></i>
+    </span>
+  </div>
 
   <FlexTable
   :items="productos"

@@ -23,6 +23,7 @@
       <!-- informacion-->
       <div class="flex-1">
         <div class="font-semibold text-gray-700 dark:text-gray-200">{{ item.nombre }}</div>
+        <div class="text-xs text-primary font-medium" v-if="item.unidad_medida && item.unidad_medida !== 'unidad'">{{ item.unidad_medida }}</div>
         <div class="text-xl text-gray-400 dark:text-gray-500">
           <template v-if="item.es_servicio">
             $<input

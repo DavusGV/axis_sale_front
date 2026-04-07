@@ -141,6 +141,18 @@
             <input v-model.number="form.stock" type="number" min="0" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required/>
           </div>
 
+          <!-- UNIDAD DE MEDIDA -->
+          <div>
+            <label class="block text-sm mb-1">Unida de Medida</label>
+            <div class="relative">
+              <input
+                v-model="form.unidad_medida"
+                placeholder="Ej: 1 Kg, 1 Lt, 10 Cm, 1 Mtr, 1 Pz"
+                class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" type="text"
+              />
+            </div>
+          </div>
+
         </div>
 
         <!-- DESCRIPCIÓN -->
@@ -184,6 +196,7 @@ const form = ref<any>({
   stock: 0,
   categoria_id: '',
   imagen: null,
+  unidad_medida: '',
   es_servicio: false
 })
 
@@ -219,6 +232,7 @@ function resetForm() {
     stock: 0,
     categoria_id: '',
     imagen: null,
+    unidad_medida: '',
     es_servicio: false,
   }
   previewImage.value = null
