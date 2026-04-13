@@ -14,12 +14,26 @@ import ModalTicket from '@/components/ventas/ModalTicket.vue'
 import ModalPrecioServicio from '@/components/ventas/ModalPrecioServicio.vue'
 import ModalCotizacion from '@/components/ventas/ModalCotizacion.vue'
 import { registrarCotizacion } from '@/api/cotizaciones'
+import { useCarritoPersistente } from '@/utils/carritoPersistente'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
 const productos = ref<any[]>([])
 const search = ref('')
 const carrito = ref<any[]>([])
+// obtenemos el usuario actual del localStorage para el contexto del carrito
+const usuarioActual = JSON.parse(localStorage.getItem('user') || '{}')
+
+// inicializamos la persistencia del carrito
+// el contexto se pasa como getter para leer el establecimiento activo en tiempo real
+const {
+  restaurarCarrito,
+  limpiarCarrito,
+  iniciarPersistencia,
+} = useCarritoPersistente(carrito, () => ({
+  establecimiento_id: authStore.establishmentActive ?? null,
+  usuario_id: usuarioActual.id ?? null,
+}))
 const page = ref(1)
 const lastPage = ref(1)
 
@@ -95,14 +109,23 @@ watch(
   async (newVal, oldVal) => {
     if (!newVal || newVal === oldVal) return
 
+    // al cambiar de establecimiento limpiamos el carrito
+    // ya que los productos pertenecen al establecimiento anterior
+    limpiarCarrito()
+
     page.value = 1
     await loadProducts()
   }
 )
 
 onMounted(async () => {
+  // primero restauramos el carrito si pertenece al mismo usuario y establecimiento
+  restaurarCarrito()
+  // arrancamos el watch despues de restaurar para evitar guardar lo recien cargado
+  iniciarPersistencia()
+
   await loadProducts()
-  iniciarEscuchaScanner() // Activar scanner automatico
+  iniciarEscuchaScanner()
 })
 
 onUnmounted(() => {
@@ -304,6 +327,23 @@ function eliminarDelCarrito(id: number) {
   carrito.value = carrito.value.filter(i => i.producto_id !== id)
 }
 
+// pide confirmacion antes de vaciar el carrito completo
+async function confirmarLimpiarCarrito() {
+  const result = await Swal.fire({
+    title: '¿Vaciar el carrito?',
+    text: 'Se eliminarán todos los productos del carrito. Esta acción no se puede deshacer.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, vaciar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#ef4444',
+  })
+
+  if (result.isConfirmed) {
+    limpiarCarrito()
+  }
+}
+
 function abrirModalPago() {
   if (!carrito.value.length) {
     Swal.fire({
@@ -464,7 +504,8 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     console.log('resultado venta:', resultado) 
 
     // despues de registrar la venta exitosamente
-    carrito.value = []
+    // limpiamos el carrito y la persistencia para que no quede huerfano
+    limpiarCarrito()
     showModalPago.value = false
     await loadProducts()
     Swal.close()
@@ -538,7 +579,8 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
     })
 
     const resultado = await registrarCotizacion(cotizacion)
-    carrito.value             = []
+    // limpiamos el carrito y la persistencia al cotizar exitosamente
+    limpiarCarrito()
     showModalCotizacion.value = false
     Swal.close()
 
@@ -685,8 +727,10 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
       />
       <ResumenVenta
         :total="total"
+        :has-items="carrito.length > 0"
         @pagar="abrirModalPago"
         @cotizar="abrirModalCotizacion"
+        @limpiar="confirmarLimpiarCarrito"
       />
     </div>
 
