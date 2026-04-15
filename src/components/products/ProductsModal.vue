@@ -143,14 +143,25 @@
 
           <!-- UNIDAD DE MEDIDA -->
           <div>
-            <label class="block text-sm mb-1">Unida de Medida</label>
-            <div class="relative">
-              <input
-                v-model="form.unidad_medida"
-                placeholder="Ej: 1 Kg, 1 Lt, 10 Cm, 1 Mtr, 1 Pz"
-                class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" type="text"
-              />
-            </div>
+            <label class="block text-sm mb-1">Unidad de Medida</label>
+            <select
+              v-model="form.unidad_medida_id"
+              class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+            >
+              <!-- solo aparece si no hay unidades registradas -->
+              <option v-if="unidadesMedidas.length === 0" :value="null">Sin unidad de medida</option>
+
+              <!-- placeholder de seleccion cuando si hay unidades -->
+              <option v-if="unidadesMedidas.length > 0" :value="null" disabled>Selecciona una unidad</option>
+
+              <option
+                v-for="u in unidadesMedidas"
+                :key="u.id"
+                :value="u.id"
+              >
+                {{ u.unidad }} ({{ u.abreviatura }})
+              </option>
+            </select>
           </div>
 
         </div>
@@ -176,7 +187,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import Swal from 'sweetalert2'
-import { fetchCategories, createProduct, updateProduct } from '@/api/products'
+import { fetchCategories, createProduct, updateProduct, fetchUnidadesMedidasSelect } from '@/api/products'
 
 const props = defineProps({
   show: Boolean,
@@ -204,11 +215,15 @@ const previewImage = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
 const categories = ref<any[]>([])
+const unidadesMedidas = ref<any[]>([])
 
 watch(() => props.show, async (val) => {
   if (val) {
     const res = await fetchCategories()
     categories.value = res.data.categories || []
+    // cargamos el catalogo de unidades de medida
+    const unidades = await fetchUnidadesMedidasSelect()
+    unidadesMedidas.value = unidades
 
     if (props.product) {
       form.value = { ...props.product}
@@ -232,7 +247,7 @@ function resetForm() {
     stock: 0,
     categoria_id: '',
     imagen: null,
-    unidad_medida: '',
+    unidad_medida_id: null,
     es_servicio: false,
   }
   previewImage.value = null

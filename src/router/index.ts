@@ -119,6 +119,7 @@ import VentasHistorialView from '@/views/ventas/VentasHistorialView.vue';
 import PersonalThreeVue from '@/views/dashboards/PersonalThree.vue';
 import CategoriaView from '@/views/products/CategoriaView.vue';
 import MovimientosView from '@/views/finanzas/MovimientosView.vue';
+import UnidadesMedidasView from '@/views/products/UnidadesMedidasView.vue';
 
 
 const router = createRouter({
@@ -759,6 +760,12 @@ const router = createRouter({
       path: '/configuracion/productos',
       name: 'productos',
       component: ProductosView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/productos/unidades_medida',
+      name: 'unidadMedida',
+      component: UnidadesMedidasView,
       meta: { requiresAuth: true } 
     },
     {

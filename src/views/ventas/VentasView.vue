@@ -253,7 +253,10 @@ function agregarItemAlCarrito(producto: any, precioVenta: number) {
       precio_compra: producto.precio_compra,
       cantidad: 1,
       stock: producto.stock,
-      unidad_medida: producto.unidad_medida,
+      // si tiene unidad la formateamos como string al guardar
+      unidad_medida: producto.unidad_medida
+        ? `${producto.unidad_medida.unidad} (${producto.unidad_medida.abreviatura})`
+        : null,
       imagen: producto.imagen_url || defaultImg,
       es_servicio: producto.es_servicio ?? false
     })
@@ -664,7 +667,9 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
             {{ producto.nombre }}
           </span>
           <span class="text-xs text-gray-400">{{ producto.codigo ?? 'Sin codigo' }}</span>
-          <span class="text-xs text-primary font-medium" v-if="producto.unidad_medida && producto.unidad_medida !== 'unidad'">{{ producto.unidad_medida }}</span>
+          <span v-if="producto.unidad_medida" class="text-xs text-primary font-medium">
+            {{ producto.unidad_medida.unidad }} ({{ producto.unidad_medida.abreviatura }})
+          </span>
           <span class="font-bold mt-1">${{ Number(producto.precio_venta).toFixed(2) }}</span>
           <button
             class="btn justify-center"
