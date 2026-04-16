@@ -67,7 +67,7 @@
               type="number"
               min="0"
               :max="tipoDescuento === 'porcentaje' ? 100 : Number(props.item.precio)"
-              step="0.01"
+              :step="props.conDecimales ? '0.01' : '1'"
               class="block w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 focus:ring-green-400"
               placeholder="0"
             />
@@ -99,7 +99,7 @@
 import { ref, computed, watch } from 'vue'
 import Swal from 'sweetalert2'
 
-const props = defineProps(['item'])
+const props = defineProps(['item', 'conDecimales'])
 const emits = defineEmits(['close', 'confirmar'])
 
 const descuento = ref(props.item.descuento ?? null)
@@ -122,6 +122,21 @@ const totalConDescuento = computed(() => {
 
 watch([descuento, tipoDescuento], () => {
   if (descuento.value === null || descuento.value === '' || isNaN(descuento.value)) return
+
+  // si el valor tiene decimales y no esta permitido, avisamos y lo limpiamos
+  if (!props.conDecimales && descuento.value % 1 !== 0) {
+    descuento.value = null
+    Swal.fire({
+      icon: 'info',
+      title: 'Decimales no permitidos',
+      text: 'Activa la opcion en Configuracion para usar decimales en descuentos.',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000
+    })
+    return
+  }
 
   if (tipoDescuento.value === 'porcentaje') {
     // permitimos decimales en el porcentaje, solo limitamos el rango 0 a 100

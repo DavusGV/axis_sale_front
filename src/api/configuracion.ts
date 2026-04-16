@@ -10,6 +10,7 @@ export interface ConfiguracionEstablecimiento {
     formato_hora: '12h' | '24h'
     formato_fecha: string
     num_cuenta: string | null
+    descuento_con_decimales: boolean
 }
 
 // sube o actualiza el logo del establecimiento
@@ -20,6 +21,11 @@ export async function subirLogo(file: File): Promise<{ logo_url: string }> {
         headers: { 'Content-Type': 'multipart/form-data' },
     })
     return res.data.data
+}
+
+// elimina el logo del establecimiento
+export async function eliminarLogo(): Promise<void> {
+    await axiosInstance.delete('/configuracion/logo')
 }
 
 // obtiene la configuracion del establecimiento activo

@@ -53,6 +53,15 @@
                   <i class="fa-solid fa-check mr-1"></i>
                   {{ subiendoLogo ? 'Subiendo...' : 'Guardar logo' }}
                 </button>
+                <button
+                    v-if="logoUrl && !logoFile"
+                    class="px-3 py-1 text-xs font-medium rounded-lg bg-red-500 text-white hover:bg-red-600 transition"
+                    :disabled="eliminandoLogo"
+                    @click="quitarLogo"
+                >
+                    <i class="fa-solid fa-trash mr-1"></i>
+                    {{ eliminandoLogo ? 'Eliminando...' : 'Quitar logo' }}
+                </button>
               </div>
             </div>
           </div>
@@ -73,6 +82,26 @@
               <span
                 class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition"
                 :class="form.imprimir_ticket_venta ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+          </div>
+
+          <!-- toggle: activar descuentos con decimales -->
+          <div class="flex items-center justify-between py-3 border-b dark:border-gray-700">
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Descuentos con decimales</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Permite utilizar decimales en los descuentos tanto en porcentaje y monto a los productos.
+              </p>
+            </div>
+            <button
+              @click="form.descuento_con_decimales = !form.descuento_con_decimales"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition flex-shrink-0"
+              :class="form.descuento_con_decimales ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+            >
+              <span
+                class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition"
+                :class="form.descuento_con_decimales ? 'translate-x-6' : 'translate-x-1'"
               />
             </button>
           </div>
@@ -412,10 +441,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
-import { fetchConfiguracion, guardarConfiguracion, subirLogo } from '@/api/configuracion'
+import { fetchConfiguracion, guardarConfiguracion, subirLogo, eliminarLogo } from '@/api/configuracion'
+import { useConfiguracionStore } from '@/stores/configuracionStore'
 import Swal from 'sweetalert2'
 
 const loading = ref(false)
+const configuracionStore = useConfiguracionStore()
 
 const form = ref({
     modo_iva: 'sin_iva' as 'sin_iva' | 'iva_incluido' | 'iva_adicional',
@@ -425,21 +456,33 @@ const form = ref({
     formato_hora: '12h' as '12h' | '24h',
     formato_fecha: 'd/m/Y',
     num_cuenta: '' as string,
+    descuento_con_decimales: false
 })
 
 const nombreEstablecimiento = ref<string>('Mi Negocio')
 const logoUrl = ref<string | null>(null)
 const logoFile = ref<File | null>(null)
 const subiendoLogo = ref(false)
+const eliminandoLogo = ref(false)
 
 onMounted(async () => {
     try {
         const data = await fetchConfiguracion()
+        console.log('logo_url recibido:', data.logo_url) 
         const config = data.configuracion
         logoUrl.value = data.logo_url
-        form.value.modo_iva = config.modo_iva
         nombreEstablecimiento.value = data.nombre_establecimiento ?? 'Mi Negocio'
-    } catch {
+
+        form.value.modo_iva               = config.modo_iva
+        form.value.imprimir_ticket_venta  = config.imprimir_ticket_venta
+        form.value.impresora_ancho        = config.impresora_ancho
+        form.value.impresora_alto         = config.impresora_alto
+        form.value.formato_hora           = config.formato_hora
+        form.value.formato_fecha          = config.formato_fecha
+        form.value.num_cuenta             = config.num_cuenta ?? ''
+        form.value.descuento_con_decimales = config.descuento_con_decimales
+    } catch(e) {
+        console.error('error en fetchConfiguracion:', e)
     }
 })
 
@@ -473,10 +516,34 @@ async function guardarLogo() {
   }
 }
 
+async function quitarLogo() {
+    eliminandoLogo.value = true
+    try {
+        await eliminarLogo()
+        logoUrl.value = null
+        logoFile.value = null
+        Swal.fire({
+            icon: 'success',
+            title: 'Logo eliminado',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+        })
+    } catch {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el logo.' })
+    } finally {
+        eliminandoLogo.value = false
+    }
+}
+
+
 async function guardar() {
     loading.value = true
     try {
         await guardarConfiguracion(form.value)
+        // sincronizamos el store con los nuevos valores
+        await configuracionStore.cargar()
         Swal.fire({
             icon: 'success',
             title: 'Configuracion guardada',

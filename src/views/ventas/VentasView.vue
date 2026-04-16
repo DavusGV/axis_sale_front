@@ -15,12 +15,14 @@ import ModalPrecioServicio from '@/components/ventas/ModalPrecioServicio.vue'
 import ModalCotizacion from '@/components/ventas/ModalCotizacion.vue'
 import { registrarCotizacion } from '@/api/cotizaciones'
 import { useCarritoPersistente } from '@/utils/carritoPersistente'
+import { useConfiguracionStore } from '@/stores/configuracionStore'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
 const productos = ref<any[]>([])
 const search = ref('')
 const carrito = ref<any[]>([])
+const configuracionStore = useConfiguracionStore()
 // obtenemos el usuario actual del localStorage para el contexto del carrito
 const usuarioActual = JSON.parse(localStorage.getItem('user') || '{}')
 
@@ -758,6 +760,7 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
       v-if="showModalDescuentoProducto && productoDescuento"
       :key="productoDescuento.producto_id"
       :item="productoDescuento"
+      :con-decimales="configuracionStore.descuento_con_decimales"
       @close="showModalDescuentoProducto = false"
       @confirmar="aplicarDescuentoProducto"
     />

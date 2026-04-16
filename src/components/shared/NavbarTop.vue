@@ -7,15 +7,35 @@ import SwitchLanguage from '../topbar/SwitchLanguage.vue'
 import ProfileDropDown from '../topbar/ProfileDropDown.vue'
 import useWindowSize from '@/utils/useWindowSize'
 import { useAuthStore } from '@/stores/authStore'
+import { useConfiguracionStore } from '@/stores/configuracionStore'
+import { onMounted, watch } from 'vue'
 
 const { windowSize } = useWindowSize()
 const { theme } = useLayoutStore()
 const authStore = useAuthStore()
+const configuracionStore = useConfiguracionStore()
 
 defineProps<{
   isSidebarOpen: boolean
   toggleSidebar: () => void
-}>() 
+}>()
+
+onMounted(async () => {
+  // cargamos la configuracion al montar si ya hay un establecimiento activo
+  if (authStore.establishmentActive) {
+    await configuracionStore.cargar()
+  }
+})
+
+// cuando el usuario cambia de establecimiento recargamos la configuracion
+watch(
+  () => authStore.establishmentActive,
+  async (newVal, oldVal) => {
+    if (!newVal || newVal === oldVal) return
+    configuracionStore.resetear()
+    await configuracionStore.cargar()
+  }
+)
 </script>
 <template>
   <nav
