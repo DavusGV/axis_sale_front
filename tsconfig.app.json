@@ -3,6 +3,7 @@
   "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "types/vuevectormap.d.ts"],
   "exclude": ["src/**/__tests__/*", "src/**/*.vue.js"],
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "composite": true,
     "noEmit": true,
     "allowJs": true,
