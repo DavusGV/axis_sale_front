@@ -225,6 +225,17 @@ watch(
   () => authStore.establishmentActive,
   async (newVal, oldVal) => {
     if (!newVal || newVal === oldVal) return
+    // al cambiar de establecimiento reseteamos filtros y recargamos catalogos
+    categoriaSeleccionada.value = ''
+    unidadSeleccionada.value = ''
+    params.value.categoria_id = ''
+    params.value.unidad_medida_id = ''
+    params.value.search = ''
+    params.value.page = 1
+    currentPage.value = 1
+
+    await loadCategorias()
+    await loadUnidades()
     await loadProducts()
   }
 )
