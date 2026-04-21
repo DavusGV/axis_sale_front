@@ -18,7 +18,7 @@
 
     <!-- boton cotizar -->
     <button
-      class="btn w-full justify-center bg-yellow-600 border-yellow-600 mb-2"
+      class="btn w-full justify-center bg-yellow-700 border-yellow-800 mb-2"
       @click="$emit('cotizar')"
     >
       <i class="fa-solid fa-file-invoice-dollar text-lg mr-1"></i>
@@ -28,7 +28,7 @@
     <!-- boton vaciar carrito: solo visible si hay items -->
     <button
       v-if="hasItems"
-      class="btn w-full justify-center bg-red-600 border-red-600 hover:bg-red-700"
+      class="btn w-full justify-center bg-red-800 border-red-800"
       @click="$emit('limpiar')"
     >
       <i class="fa-solid fa-trash text-lg mr-1"></i>
