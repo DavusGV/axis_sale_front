@@ -14,12 +14,28 @@ import ModalTicket from '@/components/ventas/ModalTicket.vue'
 import ModalPrecioServicio from '@/components/ventas/ModalPrecioServicio.vue'
 import ModalCotizacion from '@/components/ventas/ModalCotizacion.vue'
 import { registrarCotizacion } from '@/api/cotizaciones'
+import { useCarritoPersistente } from '@/utils/carritoPersistente'
+import { useConfiguracionStore } from '@/stores/configuracionStore'
 
 // VARIABLES EXISTENTES
 const authStore = useAuthStore()
 const productos = ref<any[]>([])
 const search = ref('')
 const carrito = ref<any[]>([])
+const configuracionStore = useConfiguracionStore()
+// obtenemos el usuario actual del localStorage para el contexto del carrito
+const usuarioActual = JSON.parse(localStorage.getItem('user') || '{}')
+
+// inicializamos la persistencia del carrito
+// el contexto se pasa como getter para leer el establecimiento activo en tiempo real
+const {
+  restaurarCarrito,
+  limpiarCarrito,
+  iniciarPersistencia,
+} = useCarritoPersistente(carrito, () => ({
+  establecimiento_id: authStore.establishmentActive ?? null,
+  usuario_id: usuarioActual.id ?? null,
+}))
 const page = ref(1)
 const lastPage = ref(1)
 
@@ -95,14 +111,23 @@ watch(
   async (newVal, oldVal) => {
     if (!newVal || newVal === oldVal) return
 
+    // al cambiar de establecimiento limpiamos el carrito
+    // ya que los productos pertenecen al establecimiento anterior
+    limpiarCarrito()
+
     page.value = 1
     await loadProducts()
   }
 )
 
 onMounted(async () => {
+  // primero restauramos el carrito si pertenece al mismo usuario y establecimiento
+  restaurarCarrito()
+  // arrancamos el watch despues de restaurar para evitar guardar lo recien cargado
+  iniciarPersistencia()
+
   await loadProducts()
-  iniciarEscuchaScanner() // Activar scanner automatico
+  iniciarEscuchaScanner()
 })
 
 onUnmounted(() => {
@@ -230,7 +255,10 @@ function agregarItemAlCarrito(producto: any, precioVenta: number) {
       precio_compra: producto.precio_compra,
       cantidad: 1,
       stock: producto.stock,
-      unidad_medida: producto.unidad_medida,
+      // si tiene unidad la formateamos como string al guardar
+      unidad_medida: producto.unidad_medida
+        ? `${producto.unidad_medida.unidad} (${producto.unidad_medida.abreviatura})`
+        : null,
       imagen: producto.imagen_url || defaultImg,
       es_servicio: producto.es_servicio ?? false
     })
@@ -302,6 +330,23 @@ function restarCantidad(id: number) {
 
 function eliminarDelCarrito(id: number) {
   carrito.value = carrito.value.filter(i => i.producto_id !== id)
+}
+
+// pide confirmacion antes de vaciar el carrito completo
+async function confirmarLimpiarCarrito() {
+  const result = await Swal.fire({
+    title: '¿Vaciar el carrito?',
+    text: 'Se eliminarán todos los productos del carrito. Esta acción no se puede deshacer.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, vaciar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#ef4444',
+  })
+
+  if (result.isConfirmed) {
+    limpiarCarrito()
+  }
 }
 
 function abrirModalPago() {
@@ -464,7 +509,8 @@ async function registrarVentaLocal({ pago, metodo_pago, metodo_pago_id, total_fi
     console.log('resultado venta:', resultado) 
 
     // despues de registrar la venta exitosamente
-    carrito.value = []
+    // limpiamos el carrito y la persistencia para que no quede huerfano
+    limpiarCarrito()
     showModalPago.value = false
     await loadProducts()
     Swal.close()
@@ -538,7 +584,8 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
     })
 
     const resultado = await registrarCotizacion(cotizacion)
-    carrito.value             = []
+    // limpiamos el carrito y la persistencia al cotizar exitosamente
+    limpiarCarrito()
     showModalCotizacion.value = false
     Swal.close()
 
@@ -622,7 +669,9 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
             {{ producto.nombre }}
           </span>
           <span class="text-xs text-gray-400">{{ producto.codigo ?? 'Sin codigo' }}</span>
-          <span class="text-xs text-primary font-medium" v-if="producto.unidad_medida && producto.unidad_medida !== 'unidad'">{{ producto.unidad_medida }}</span>
+          <span v-if="producto.unidad_medida" class="text-xs text-primary font-medium">
+            {{ producto.unidad_medida.unidad }} ({{ producto.unidad_medida.abreviatura }})
+          </span>
           <span class="font-bold mt-1">${{ Number(producto.precio_venta).toFixed(2) }}</span>
           <button
             class="btn justify-center"
@@ -685,8 +734,10 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
       />
       <ResumenVenta
         :total="total"
+        :has-items="carrito.length > 0"
         @pagar="abrirModalPago"
         @cotizar="abrirModalCotizacion"
+        @limpiar="confirmarLimpiarCarrito"
       />
     </div>
 
@@ -709,6 +760,7 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
       v-if="showModalDescuentoProducto && productoDescuento"
       :key="productoDescuento.producto_id"
       :item="productoDescuento"
+      :con-decimales="configuracionStore.descuento_con_decimales"
       @close="showModalDescuentoProducto = false"
       @confirmar="aplicarDescuentoProducto"
     />

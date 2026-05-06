@@ -46,8 +46,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          <!-- Toggle servicio -->
-          <div class="flex items-center gap-3 md:col-span-2 pb-2 border-b dark:border-gray-700 mb-1">
+        <!-- Toggles superiores -->
+        <div class="flex flex-wrap items-center gap-6 md:col-span-2 pb-2 border-b dark:border-gray-700 mb-1">
+
+          <!-- Es servicio -->
+          <div class="flex items-center gap-3">
             <label class="block text-sm">Es servicio?</label>
             <button
               type="button"
@@ -62,6 +65,25 @@
               </span>
             </button>
           </div>
+
+          <!-- Generar codigo automaticamente (solo en creacion) -->
+          <div v-if="esCreacion" class="flex items-center gap-3">
+            <label class="block text-sm">Generar codigo automaticamente?</label>
+            <button
+              type="button"
+              @click="form.autogenerar = !form.autogenerar"
+              :class="form.autogenerar ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+              class="relative inline-flex items-center w-11 h-6 rounded-full transition-colors shrink-0"
+            >
+              <span
+                :class="form.autogenerar ? 'translate-x-5' : 'translate-x-0.5'"
+                class="inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform"
+              >
+              </span>
+            </button>
+          </div>
+
+        </div>
 
           <!-- CATEGORÍA -->
           <div>
@@ -83,13 +105,26 @@
           <!-- CLAVE -->
           <div>
             <label class="block text-sm mb-1">Clave</label>
-            <input v-model="form.clave" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" type="text" required />
+            <input
+              v-model="form.clave"
+              type="text"
+              :disabled="form.autogenerar"
+              :required="!form.autogenerar"
+              :placeholder="form.autogenerar ? 'Se genera automaticamente' : ''"
+              class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            />
           </div>
 
           <!-- CÓDIGO -->
           <div>
             <label class="block text-sm mb-1">Código</label>
-            <input v-model="form.codigo" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required/>
+            <input
+              v-model="form.codigo"
+              :disabled="form.autogenerar"
+              :required="!form.autogenerar"
+              :placeholder="form.autogenerar ? 'Se genera automaticamente' : ''"
+              class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            />
           </div>
 
           <!-- PRECIO COMPRA -->
@@ -143,14 +178,25 @@
 
           <!-- UNIDAD DE MEDIDA -->
           <div>
-            <label class="block text-sm mb-1">Unida de Medida</label>
-            <div class="relative">
-              <input
-                v-model="form.unidad_medida"
-                placeholder="Ej: 1 Kg, 1 Lt, 10 Cm, 1 Mtr, 1 Pz"
-                class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" type="text"
-              />
-            </div>
+            <label class="block text-sm mb-1">Unidad de Medida</label>
+            <select
+              v-model="form.unidad_medida_id"
+              class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+            >
+              <!-- solo aparece si no hay unidades registradas -->
+              <option v-if="unidadesMedidas.length === 0" :value="null">Sin unidad de medida</option>
+
+              <!-- placeholder de seleccion cuando si hay unidades -->
+              <option v-if="unidadesMedidas.length > 0" :value="null" disabled>Selecciona una unidad</option>
+
+              <option
+                v-for="u in unidadesMedidas"
+                :key="u.id"
+                :value="u.id"
+              >
+                {{ u.unidad }} ({{ u.abreviatura }})
+              </option>
+            </select>
           </div>
 
         </div>
@@ -174,9 +220,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import Swal from 'sweetalert2'
-import { fetchCategories, createProduct, updateProduct } from '@/api/products'
+import { fetchCategories, createProduct, updateProduct, fetchUnidadesMedidasSelect } from '@/api/products'
 
 const props = defineProps({
   show: Boolean,
@@ -197,18 +243,25 @@ const form = ref<any>({
   categoria_id: '',
   imagen: null,
   unidad_medida: '',
-  es_servicio: false
+  es_servicio: false,
+  autogenerar: false
 })
 
 const previewImage = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
 const categories = ref<any[]>([])
+const unidadesMedidas = ref<any[]>([])
+// solo en creacion mostramos el toggle de autogenerar
+const esCreacion = computed(() => !(props.product && props.product.id))
 
 watch(() => props.show, async (val) => {
   if (val) {
     const res = await fetchCategories()
     categories.value = res.data.categories || []
+    // cargamos el catalogo de unidades de medida
+    const unidades = await fetchUnidadesMedidasSelect()
+    unidadesMedidas.value = unidades
 
     if (props.product) {
       form.value = { ...props.product}
@@ -217,6 +270,14 @@ watch(() => props.show, async (val) => {
     } else {
       resetForm()
     }
+  }
+})
+
+// cuando se activa el autogenerar limpiamos clave y codigo para que no viajen al backend
+watch(() => form.value.autogenerar, (nuevoValor) => {
+  if (nuevoValor) {
+    form.value.codigo = ''
+    form.value.clave = ''
   }
 })
 
@@ -232,8 +293,9 @@ function resetForm() {
     stock: 0,
     categoria_id: '',
     imagen: null,
-    unidad_medida: '',
+    unidad_medida_id: null,
     es_servicio: false,
+    autogenerar: false,
   }
   previewImage.value = null
 }

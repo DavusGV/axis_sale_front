@@ -18,17 +18,36 @@
 
     <!-- boton cotizar -->
     <button
-      class="btn w-full justify-center bg-yellow-600 border-yellow-600"
+      class="btn w-full justify-center bg-yellow-700 border-yellow-800 mb-2"
       @click="$emit('cotizar')"
     >
       <i class="fa-solid fa-file-invoice-dollar text-lg mr-1"></i>
       Cotizar
     </button>
 
+    <!-- boton vaciar carrito: solo visible si hay items -->
+    <button
+      v-if="hasItems"
+      class="btn w-full justify-center bg-red-800 border-red-800"
+      @click="$emit('limpiar')"
+    >
+      <i class="fa-solid fa-trash text-lg mr-1"></i>
+      Vaciar carrito
+    </button>
+
   </div>
 </template>
 
 <script setup>
-defineProps(['total'])
-defineEmits(['pagar', 'cotizar'])
+defineProps({
+  total: {
+    type: Number,
+    required: true,
+  },
+  hasItems: {
+    type: Boolean,
+    default: false,
+  },
+})
+defineEmits(['pagar', 'cotizar', 'limpiar'])
 </script>

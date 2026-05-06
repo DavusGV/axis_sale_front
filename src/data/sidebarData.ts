@@ -65,6 +65,7 @@ export const sidebarData = [
                 name: "Modulos",
                 icon: IconSettingsBolt,
                 submenus: [
+                    { title: "Unidades de medida", url: "/productos/unidades_medida" },
                     { title: "Categoria", url: "/configuracion/categorias" },
                     { title: "Productos", url: "/configuracion/productos" },
                     { title: "Cajas", url: "/cajas" },

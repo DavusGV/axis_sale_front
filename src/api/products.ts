@@ -5,6 +5,7 @@ export interface ProductFilters {
   page?: number 
   per_page?: number 
   categoria_id?: number | string
+  unidad_medida_id?: number | string 
 }
 
 export async function fetchProducts(params: ProductFilters = {}) {
@@ -12,7 +13,8 @@ export async function fetchProducts(params: ProductFilters = {}) {
     params: {
       page: params.page ?? 1,
       search: params.search ?? '',
-      categoria_id: params.categoria_id ?? ''
+      categoria_id: params.categoria_id ?? '',
+      unidad_medida_id: params.unidad_medida_id ?? '' 
     }
   })
   return res.data
@@ -80,4 +82,13 @@ export async function updateProduct(product: any) {
 export async function DestroyProduct(id: number){
   const res = await axiosInstance.delete(`/products/${id}`)
   return res.data
+}
+
+// obtiene todas las unidades de medida del establecimiento para el select del modal
+export async function fetchUnidadesMedidasSelect() {
+  const res = await axiosInstance.get('/unidades-medidas', {
+    params: { per_page: 100 }
+  })
+  // retorna solo el array para uso en select
+  return res.data.data as { id: number; unidad: string; abreviatura: string }[]
 }

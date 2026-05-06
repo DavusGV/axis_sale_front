@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import Swal from 'sweetalert2'
 import FlexTable from '@/components/flex/FlexTable.vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
-import { fetchProducts, type ProductFilters, DestroyProduct, fetchCategories } from '@/api/products'
+import { fetchProducts, type ProductFilters, DestroyProduct, fetchCategories, fetchUnidadesMedidasSelect } from '@/api/products'
 import { useAuthStore } from '@/stores/authStore'
 import ProductModal from '@/components/products/ProductsModal.vue'
 
@@ -18,9 +18,11 @@ const loading = ref(false)
 const startIndex = ref(0)
 const endIndex = ref(0)
 const totalPages = ref(1)
-// catalogo y filtro de categoria
+// catalogo y filtro de
 const categorias = ref<any[]>([])
 const categoriaSeleccionada = ref<string | number>('')
+const unidades = ref<any[]>([])
+const unidadSeleccionada = ref<string | number>('')
 
 const authStore = useAuthStore()
 
@@ -42,7 +44,8 @@ const columns = [
 const params = ref({
   page: 1,
   search: "",
-  categoria_id: ""
+  categoria_id: "",
+  unidad_medida_id: "" 
 })
 
 const pagination = ref({
@@ -59,6 +62,14 @@ async function loadCategorias() {
     categorias.value = res.categories || res.data?.categories || []
   } catch (e) {
     categorias.value = []
+  }
+}
+
+async function loadUnidades() {
+  try {
+    unidades.value = await fetchUnidadesMedidasSelect()
+  } catch (e) {
+    unidades.value = []
   }
 }
 
@@ -97,6 +108,13 @@ function handleSearch(event: any) {
 // cuando cambia la categoria seleccionada recargamos desde la pagina 1
 watch(categoriaSeleccionada, (nuevoValor) => {
   params.value.categoria_id = nuevoValor === null ? '' : String(nuevoValor)
+  params.value.page = 1
+  currentPage.value = 1
+  loadProducts()
+})
+
+watch(unidadSeleccionada, (nuevoValor) => {
+  params.value.unidad_medida_id = nuevoValor === null ? '' : String(nuevoValor)
   params.value.page = 1
   currentPage.value = 1
   loadProducts()
@@ -150,6 +168,17 @@ function onProductSaved() {
   loadProducts()
 }
 
+function limpiarFiltros() {
+  categoriaSeleccionada.value = ''
+  unidadSeleccionada.value = ''
+  params.value.search = ''
+  params.value.categoria_id = ''
+  params.value.unidad_medida_id = ''
+  params.value.page = 1
+  currentPage.value = 1
+  loadProducts()
+}
+
 async function handleDelete(id: number) {
   const result = await Swal.fire({
     title: '¿Eliminar producto?',
@@ -196,12 +225,24 @@ watch(
   () => authStore.establishmentActive,
   async (newVal, oldVal) => {
     if (!newVal || newVal === oldVal) return
+    // al cambiar de establecimiento reseteamos filtros y recargamos catalogos
+    categoriaSeleccionada.value = ''
+    unidadSeleccionada.value = ''
+    params.value.categoria_id = ''
+    params.value.unidad_medida_id = ''
+    params.value.search = ''
+    params.value.page = 1
+    currentPage.value = 1
+
+    await loadCategorias()
+    await loadUnidades()
     await loadProducts()
   }
 )
 
 onMounted(async () => {
   await loadCategorias()
+  await loadUnidades() 
   await loadProducts()
 })
 </script>
@@ -235,14 +276,40 @@ onMounted(async () => {
       <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
     </div>
 
-    <span
-      v-if="categoriaSeleccionada"
-      class="ml-auto inline-flex items-center gap-2 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full cursor-pointer hover:bg-primary/20 transition"
-      @click="categoriaSeleccionada = ''"
+    <!-- filtro por unidad de medida -->
+    <div class="relative flex-1 min-w-[220px] max-w-xs">
+      <i class="fa-solid fa-ruler absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+
+      <select
+        v-model="unidadSeleccionada"
+        class="w-full appearance-none border border-gray-300 dark:border-gray-700
+              bg-white dark:bg-bg4 dark:text-gray-100
+              rounded-lg pl-9 pr-9 py-2 text-sm
+              focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+      >
+        <option value="">Todas las unidades</option>
+        <option v-for="u in unidades" :key="u.id" :value="u.id">
+          {{ u.unidad }} ({{ u.abreviatura }})
+        </option>
+      </select>
+
+      <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+    </div>
+
+    <!-- boton limpiar todos los filtros -->
+    <button
+      class="flex items-center gap-1.5 px-3 py-1.5
+            text-xs font-medium
+            bg-primary text-white
+            border border-primary
+            rounded-lg shadow-sm
+            hover:bg-transparent hover:text-primary
+            transition whitespace-nowrap ml-auto"
+      @click="limpiarFiltros"
     >
-      Limpiar filtro
       <i class="fa-solid fa-xmark"></i>
-    </span>
+      Limpiar filtros
+    </button>
   </div>
 
   <FlexTable
