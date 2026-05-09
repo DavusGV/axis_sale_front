@@ -6,10 +6,12 @@ import TopBanner from '@/components/shared/TopBanner.vue'
 import { fetchProducts, type ProductFilters, DestroyProduct, fetchCategories, fetchUnidadesMedidasSelect } from '@/api/products'
 import { useAuthStore } from '@/stores/authStore'
 import ProductModal from '@/components/products/ProductsModal.vue'
+import ProductsImportModal from '@/components/products/ProductsImportModal.vue'
 
 // ---------- STATE ----------
 const showProductModal = ref(false)
 const editingProduct = ref<any | null>(null)
+const showImportModal = ref(false)
 const productos = ref<any[]>([])
 const total = ref(0)
 const currentPage = ref<number>(1)     //siempre 1
@@ -164,6 +166,19 @@ function closeProductModal() {
   showProductModal.value = false
 }
 
+function openImportModal() {
+  showImportModal.value = true
+}
+
+function closeImportModal() {
+  showImportModal.value = false
+}
+
+function onImported() {
+  // recargamos el listado para que se vean los productos importados
+  loadProducts()
+}
+
 function onProductSaved() {
   loadProducts()
 }
@@ -250,6 +265,10 @@ onMounted(async () => {
 <template>
   <TopBanner title="Productos">
     <div class="flex justify-end gap-4 lg:gap-6">
+      <button class="btn-outline" @click="openImportModal">
+        <i class="fa-solid fa-file-arrow-up"></i>
+        Importar
+      </button>
       <button class="btn" @click="openProductModal">
         <i class="far fa-plus"></i>
         Agregar
@@ -336,5 +355,11 @@ onMounted(async () => {
     :product="editingProduct"
     @close="closeProductModal"
     @saved="onProductSaved"
+  />
+
+  <ProductsImportModal
+    :show="showImportModal"
+    @close="closeImportModal"
+    @imported="onImported"
   />
 </template>
