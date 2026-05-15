@@ -153,12 +153,6 @@ const router = createRouter({
       meta: { requiresAuth: true } 
     },
     {
-      path: '/dashboards/stock',
-      name: 'stock',
-      component: StockViewVue,
-      meta: { requiresAuth: true } 
-    },
-    {
       path: '/dashboards/sales',
       name: 'sales',
       component: SalesViewVue,
@@ -760,6 +754,12 @@ const router = createRouter({
       path: '/configuracion/productos',
       name: 'productos',
       component: ProductosView,
+      meta: { requiresAuth: true } 
+    },
+    {
+      path: '/dashboards/stock',
+      name: 'stock',
+      component: StockViewVue,
       meta: { requiresAuth: true } 
     },
     {

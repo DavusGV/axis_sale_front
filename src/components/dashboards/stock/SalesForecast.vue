@@ -1,166 +1,117 @@
 <script setup lang="ts">
-import CommonDropdown from '@/components/shared/CommonDropdown.vue';
-import { useLayoutStore } from '@/stores/layoutStore';
-import useWindowSize from '@/utils/useWindowSize';
-import type { ApexOptions } from 'apexcharts';
-import { computed } from 'vue';
-import VueApexCharts from 'vue3-apexcharts';
+import { useLayoutStore } from '@/stores/layoutStore'
+import useWindowSize from '@/utils/useWindowSize'
+import type { ApexOptions } from 'apexcharts'
+import { computed } from 'vue'
+import VueApexCharts from 'vue3-apexcharts'
+
 const { windowSize } = useWindowSize()
 const { theme } = useLayoutStore()
-const series = [
-    {
-        name: "Website Blog",
-        type: "column",
-        data: [40, 50, 44, 31, 22, 43, 20, 35, 22, 32, 30, 16],
-    },
-    {
-        name: "chart 2",
-        type: "area",
-        data: [15, 28, 20, 25, 18, 30, 22, 36, 32, 46, 30, 27],
-    },
-    {
-        name: "Social Media",
-        type: "line",
-        data: [5, 8, 6, 5, 7, 8, 7, 6, 8, 4, 6, 3],
-    },
-];
-const chartData = computed<ApexOptions>(() => {
-    return {
-        chart: {
-            width: "100%",
-            type: "line",
-            toolbar: {
-                show: false,
-            },
-            animations: {
-                enabled: true,
-                easing: "easeinout",
-                speed: 800,
-            },
-        },
-        plotOptions: {
-            bar: {
-                columnWidth: windowSize.value < 768 ? "8" : "20",
-                dataLabels: {
-                    position: "center",
-                },
-            },
-        },
-        dataLabels: {
-            enabled: false,
-        },
-        stroke: {
-            width: [0, 3, 3],
-            colors: ["#5D69F4", "#FFC861", "#00998B"],
-            dashArray: [0, 0, 10],
-            curve: ["straight", "straight", "smooth"],
-        },
 
-        legend: {
-            show: false,
-        },
-        xaxis: {
-            categories: [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-            ],
-            labels: {
-                style: {
-                    colors: !theme.isDark ? "#404A60" : "#EBECEF",
-                },
-            },
-            axisBorder: {
-                show: false,
-            },
-            axisTicks: {
-                color: theme.isDark ? "#404A60" : "#EBECEF",
-            },
-        },
-        yaxis: [
-            {
-                seriesName: "Website Blog",
-                labels: {
-                    show: true,
-                    offsetX: -40,
-                    style: {
-                        colors: !theme.isDark ? "#404A60" : "#EBECEF",
-                    },
-                },
-            },
-            {
-                seriesName: "chart 2",
-                max: 70,
-                labels: {
-                    show: false,
-                },
-            },
-            {
-                seriesName: "Social Media",
-                max: 30,
-                labels: {
-                    show: false,
-                },
-            },
-        ],
-        colors: ["#4680FF", "#FFC861"],
-        fill: {
-            colors: ["#5D69F4", "#FFC861", "#00998B"],
-            opacity: [1, 0.1, 1],
-        },
-        responsive: [
-            {
-                breakpoint: 1500,
-                options: {
-                    chart: {
-                        height: 400,
-                    },
-                },
-            },
-            {
-                breakpoint: 992,
-                options: {
-                    chart: {
-                        height: 280,
-                    },
-                },
-            },
-            {
-                breakpoint: 570,
-                options: {
-                    chart: {
-                        height: 250,
-                    },
-                },
-            },
-        ],
-        grid: {
-            borderColor: theme.isDark ? "#404A60" : "#EBECEF",
-            padding: {
-                left: -30,
-            },
-        },
-    };
-}) 
+const props = defineProps<{
+  categorias: string[]
+  series: { name: string; data: number[] }[]
+  productoNombre: string
+}>()
+
+const chartData = computed<ApexOptions>(() => ({
+  chart: {
+    type: 'bar',
+    stacked: true,
+    toolbar: { show: false },
+    animations: {
+      enabled: true,
+      easing: 'easeinout',
+      speed: 600,
+    },
+  },
+  plotOptions: {
+    bar: {
+      columnWidth: windowSize.value < 768 ? '60%' : '40%',
+      borderRadius: 4,
+    },
+  },
+  dataLabels: { enabled: false },
+  // colores: entradas (verde), ventas (azul), reducciones (rojo)
+  colors: ['#10B981', '#3B82F6', '#EF4444'],
+  legend: {
+    position: 'top',
+    horizontalAlign: 'right',
+    labels: {
+      colors: theme.isDark ? '#EBECEF' : '#404A60',
+    },
+  },
+  xaxis: {
+    categories: props.categorias,
+    labels: {
+      style: {
+        colors: theme.isDark ? '#EBECEF' : '#404A60',
+        fontSize: '11px',
+      },
+      rotate: -45,
+      hideOverlappingLabels: true,
+    },
+    axisBorder: { show: false },
+    axisTicks: { color: theme.isDark ? '#404A60' : '#EBECEF' },
+  },
+  yaxis: {
+    labels: {
+      style: { colors: theme.isDark ? '#EBECEF' : '#404A60' },
+      formatter: (val: number) => Math.round(val).toString(),
+    },
+  },
+  fill: { opacity: 1 },
+  grid: {
+    borderColor: theme.isDark ? '#404A60' : '#EBECEF',
+    strokeDashArray: 3,
+  },
+  tooltip: {
+    theme: theme.isDark ? 'dark' : 'light',
+    y: {
+      formatter: (val: number) => `${val} unidad(es)`,
+    },
+  },
+  responsive: [
+    { breakpoint: 1500, options: { chart: { height: 380 } } },
+    { breakpoint: 992,  options: { chart: { height: 320 } } },
+    { breakpoint: 570,  options: { chart: { height: 280 } } },
+  ],
+}))
+
+// detectamos si hay datos para mostrar
+const hayDatos = computed(() => {
+  return props.series.some(s => s.data.some(v => v > 0))
+})
 </script>
+
 <template>
-    <div class="col-span-12 lg:col-span-7 xl:col-span-8 box overflow-x-hidden">
-        <div class="flex flex-wrap justify-between items-center gap-3 pb-4 lg:pb-6 mb-4 lg:mb-6 bb-dashed">
-            <p class="font-medium">Sales Forecast</p>
-            <div class="flex items-center gap-2">
-                <p class="text-xs sm:text-sm">Sort By : </p>
-                <CommonDropdown />
-            </div>
-        </div>
-        <VueApexCharts :height="400" width="100%" :options="chartData" :series="series" type="line" />
+  <div class="col-span-12 box overflow-x-hidden">
+    <div class="flex flex-wrap justify-between items-center gap-3 pb-4 lg:pb-6 mb-4 lg:mb-6 bb-dashed">
+      <div>
+        <p class="font-medium text-lg">Movimientos por dia</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {{ productoNombre || 'Selecciona un producto' }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3 text-xs">
+        <span class="flex items-center gap-1">
+          <span class="w-3 h-3 rounded-sm bg-green-500"></span> Entradas
+        </span>
+        <span class="flex items-center gap-1">
+          <span class="w-3 h-3 rounded-sm bg-blue-500"></span> Ventas
+        </span>
+        <span class="flex items-center gap-1">
+          <span class="w-3 h-3 rounded-sm bg-red-500"></span> Reducciones
+        </span>
+      </div>
     </div>
+
+    <div v-if="hayDatos">
+      <VueApexCharts :height="400" width="100%" :options="chartData" :series="series" type="bar" />
+    </div>
+    <div v-else class="flex flex-col items-center justify-center py-16 text-gray-400">
+      <i class="fa-solid fa-chart-column text-5xl mb-3"></i>
+      <p>No hay movimientos en el rango seleccionado.</p>
+    </div>
+  </div>
 </template>
