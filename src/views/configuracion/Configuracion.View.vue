@@ -209,6 +209,91 @@
                     placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
+
+          <!-- impresora de tickets con QZ Tray -->
+          <div class="flex flex-col gap-2 py-3 border-b dark:border-gray-700">
+              <div>
+                  <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Impresora de tickets</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                      Impresora termica para tickets de ventas y abonos. Requiere QZ Tray instalado.
+                  </p>
+              </div>
+
+              <!-- error si QZ Tray no esta disponible -->
+              <div
+                  v-if="errorQz"
+                  class="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2"
+              >
+                  <i class="fa-solid fa-circle-exclamation mr-1"></i>
+                  {{ errorQz }}
+              </div>
+
+              <div class="flex gap-2 items-center">
+                  <!-- select de impresoras -->
+                  <select
+                      v-model="form.impresora_ticket"
+                      class="flex-1 text-sm px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600
+                            bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500"
+                      :disabled="cargandoImpresoras || impresorasDisponibles.length === 0"
+                  >
+                      <option :value="null">-- Sin impresora seleccionada --</option>
+                      <option
+                          v-for="impresora in impresorasDisponibles"
+                          :key="impresora"
+                          :value="impresora"
+                      >
+                          {{ impresora }}
+                      </option>
+                  </select>
+
+                  <!-- boton para listar impresoras -->
+                  <button
+                      class="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 dark:bg-gray-700
+                            text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600
+                            transition flex items-center gap-1 flex-shrink-0"
+                      :disabled="cargandoImpresoras"
+                      @click="cargarImpresoras"
+                  >
+                      <i
+                          class="fa-solid fa-rotate"
+                          :class="{ 'fa-spin': cargandoImpresoras }"
+                      ></i>
+                      {{ cargandoImpresoras ? 'Buscando...' : 'Detectar' }}
+                  </button>
+              </div>
+
+              <!-- impresora actualmente guardada si no se han cargado aun -->
+              <p
+                  v-if="form.impresora_ticket && impresorasDisponibles.length === 0"
+                  class="text-xs text-gray-500 dark:text-gray-400"
+              >
+                  <i class="fa-solid fa-print mr-1"></i>
+                  Guardada: {{ form.impresora_ticket }}
+              </p>
+          </div>
+
+          <!-- toggle: impresion automatica al finalizar venta -->
+          <div class="flex items-center justify-between py-3 border-b dark:border-gray-700">
+              <div>
+                  <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">
+                      Impresion automatica al vender
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                      Imprime el ticket automaticamente al finalizar una venta. Requiere impresora de tickets configurada.
+                  </p>
+              </div>
+              <button
+                  @click="form.impresion_automatica = !form.impresion_automatica"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition flex-shrink-0"
+                  :class="form.impresion_automatica ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+                  :disabled="!form.impresora_ticket"
+              >
+                  <span
+                      class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition"
+                      :class="form.impresion_automatica ? 'translate-x-6' : 'translate-x-1'"
+                  />
+              </button>
+          </div>
           <!-- Agregan mas toggles aqui siguiendo el mismo patron -->
 
         </div>
@@ -443,6 +528,7 @@ import { ref, onMounted } from 'vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
 import { fetchConfiguracion, guardarConfiguracion, subirLogo, eliminarLogo } from '@/api/configuracion'
 import { useConfiguracionStore } from '@/stores/configuracionStore'
+import { useQzTray } from '@/utils/useQzTray'
 import Swal from 'sweetalert2'
 
 const loading = ref(false)
@@ -453,6 +539,8 @@ const form = ref({
     imprimir_ticket_venta: true,
     impresora_ancho: 80,
     impresora_alto: 200,
+    impresora_ticket: null as string | null, 
+    impresion_automatica: false, 
     formato_hora: '12h' as '12h' | '24h',
     formato_fecha: 'd/m/Y',
     num_cuenta: '' as string,
@@ -464,6 +552,12 @@ const logoUrl = ref<string | null>(null)
 const logoFile = ref<File | null>(null)
 const subiendoLogo = ref(false)
 const eliminandoLogo = ref(false)
+
+// variables para configurar la impresora de tickets
+const { listarImpresoras } = useQzTray()
+const impresorasDisponibles = ref<string[]>([])
+const cargandoImpresoras = ref(false)
+const errorQz = ref<string | null>(null)
 
 onMounted(async () => {
     try {
@@ -477,6 +571,8 @@ onMounted(async () => {
         form.value.imprimir_ticket_venta  = config.imprimir_ticket_venta
         form.value.impresora_ancho        = config.impresora_ancho
         form.value.impresora_alto         = config.impresora_alto
+        form.value.impresora_ticket       = config.impresora_ticket ?? null
+        form.value.impresion_automatica   = config.impresion_automatica ?? false
         form.value.formato_hora           = config.formato_hora
         form.value.formato_fecha          = config.formato_fecha
         form.value.num_cuenta             = config.num_cuenta ?? ''
@@ -537,6 +633,18 @@ async function quitarLogo() {
     }
 }
 
+async function cargarImpresoras() {
+    cargandoImpresoras.value = true
+    errorQz.value = null
+    try {
+        impresorasDisponibles.value = await listarImpresoras()
+    } catch {
+        errorQz.value = 'No se pudo conectar con QZ Tray. Verifique que este instalado y ejecutandose.'
+        impresorasDisponibles.value = []
+    } finally {
+        cargandoImpresoras.value = false
+    }
+}
 
 async function guardar() {
     loading.value = true

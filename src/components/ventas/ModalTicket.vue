@@ -56,11 +56,14 @@
         </button>
         <button
           class="btn flex-1 flex items-center justify-center gap-2"
-          :disabled="!pdfUrl"
+          :disabled="!pdfUrl || imprimiendo"
           @click="imprimir"
         >
-          <i class="fa-solid fa-print"></i>
-          Imprimir
+          <i
+              class="fa-solid"
+              :class="imprimiendo ? 'fa-spinner fa-spin' : 'fa-print'"
+          ></i>
+          {{ imprimiendo ? 'Imprimiendo...' : 'Imprimir' }}
         </button>
       </div>
 
@@ -71,11 +74,17 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import axiosInstance from '@/utils/axios'
+import { useQzTray } from '@/utils/useQzTray'
+import { obtenerTicketBase64 } from '@/api/ventas'
+import { useConfiguracionStore } from '@/stores/configuracionStore'
+import { obtenerTicketCreditoBase64, obtenerTicketAbonoBase64 } from '@/api/planes_pago'
+import Swal from 'sweetalert2'
 
 const props = defineProps<{
   id: number
   tipo: 'venta' | 'cotizacion' | 'credito' | 'abono'
   descargar?: boolean // descarga automatica
+  autoImprimir?: boolean
   folio?: string  // folio real para el nombre del archivo descargado
   pagoId?: number
 }>()
@@ -88,8 +97,13 @@ const pdfUrl   = ref<string | null>(null)
 const pdfBlob  = ref<Blob | null>(null)
 const folio = ref(props.folio ?? '')
 const zoomPdf = ref(220) // zoom base para ticket termico 80mm
+const imprimiendo   = ref(false)
 
-onMounted(() => {
+const configuracionStore = useConfiguracionStore()
+
+const { imprimirPdf } = useQzTray()
+
+onMounted(async () => {
   cargarPdf()
 })
 
@@ -105,42 +119,49 @@ async function cargarPdf() {
   error.value    = null
 
   try {
-    // determinamos el endpoint segun el tipo
-    let ruta = ''
-    if (props.tipo === 'cotizacion') {
-      ruta = `/cotizaciones/${props.id}/ticket-pdf`
-    } else if (props.tipo === 'credito') {
-      ruta = `/planes-pago/${props.id}/ticket-pdf`
-    } else if (props.tipo === 'abono') {
-      ruta = `/planes-pago/${props.id}/pagos/${props.pagoId}/ticket-pdf`
-    } else {
-      ruta = `/ventas/${props.id}/ticket-pdf`
-    }
+      let ruta = ''
+      if (props.tipo === 'cotizacion') {
+          ruta = `/cotizaciones/${props.id}/ticket-pdf`
+      } else if (props.tipo === 'credito') {
+          ruta = `/planes-pago/${props.id}/ticket-pdf`
+      } else if (props.tipo === 'abono') {
+          ruta = `/planes-pago/${props.id}/pagos/${props.pagoId}/ticket-pdf`
+      } else {
+          ruta = `/ventas/${props.id}/ticket-pdf`
+      }
 
-    const res = await axiosInstance.get(ruta, { responseType: 'blob' })
+      const res = await axiosInstance.get(ruta, { responseType: 'blob' })
 
-    // intentamos extraer el folio del header content-disposition
-    const disposition = res.headers['content-disposition'] ?? ''
-    const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
-    if (match) {
-      const nombreCompleto = match[1].replace(/['"]/g, '')
-      folio.value = nombreCompleto.replace('.pdf', '')
-    }
+      const disposition = res.headers['content-disposition'] ?? ''
+      const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+      if (match) {
+          const nombreCompleto = match[1].replace(/['"]/g, '')
+          folio.value = nombreCompleto.replace('.pdf', '')
+      }
 
-    const blob = new Blob([res.data], { type: 'application/pdf' })
-    pdfBlob.value = blob
-    pdfUrl.value = window.URL.createObjectURL(blob) + `#zoom=${zoomPdf.value}&toolbar=0&navpanes=0&scrollbar=0&view=FitH`
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      pdfBlob.value = blob
+      pdfUrl.value  = window.URL.createObjectURL(blob) + `#zoom=${zoomPdf.value}&toolbar=0&navpanes=0&scrollbar=0&view=FitH`
 
-    // descarga automatica solo si se solicito explicitamente
-    if (props.descargar) {
-      setTimeout(() => descargarPDF(), 500)
-    }
+      if (props.descargar) {
+          setTimeout(() => descargarPDF(), 500)
+      }
+
+      // impresion automatica: solo desde flujo de venta nueva con el prop activado
+      if (
+          props.autoImprimir &&
+          configuracionStore.impresion_automatica &&
+          configuracionStore.impresora_ticket &&
+          props.tipo !== 'cotizacion'
+      ) {
+          await imprimir()
+      }
 
   } catch (e: any) {
-    console.error('Error al cargar el PDF:', e)
-    error.value = 'No se pudo generar el ticket. Intente de nuevo.'
+      console.error('Error al cargar el PDF:', e)
+      error.value = 'No se pudo generar el ticket. Intente de nuevo.'
   } finally {
-    cargando.value = false
+      cargando.value = false
   }
 }
 
@@ -157,15 +178,67 @@ function descargarPDF() {
   window.URL.revokeObjectURL(url)
 }
 
-function imprimir() {
+async function imprimir() {
   if (!pdfUrl.value) return
 
-  const ventana = window.open(pdfUrl.value, '_blank')
-  if (ventana) {
-    ventana.addEventListener('load', () => {
-      ventana.focus()
-      ventana.print()
-    })
+  if (props.tipo === 'cotizacion') {
+      const ventana = window.open(pdfUrl.value, '_blank')
+      if (ventana) {
+          ventana.addEventListener('load', () => {
+              ventana.focus()
+              ventana.print()
+          })
+      }
+      return
+  }
+
+  if (!configuracionStore.impresora_ticket) {
+      Swal.fire({
+          icon: 'warning',
+          title: 'Sin impresora configurada',
+          text: 'Ve a Configuracion y selecciona una impresora de tickets.',
+          confirmButtonText: 'Entendido',
+      })
+      return
+  }
+
+  imprimiendo.value = true
+  try {
+      let resultado: { pdf_base64: string; nombre_archivo: string }
+
+      if (props.tipo === 'venta') {
+          resultado = await obtenerTicketBase64(props.id)
+      } else if (props.tipo === 'credito') {
+          resultado = await obtenerTicketCreditoBase64(props.id)
+      } else {
+          resultado = await obtenerTicketAbonoBase64(props.id, props.pagoId!)
+      }
+
+      await imprimirPdf(
+          configuracionStore.impresora_ticket,
+          resultado.pdf_base64,
+          configuracionStore.impresora_ancho
+      )
+
+      Swal.fire({
+          icon: 'success',
+          title: 'Imprimiendo...',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000,
+      })
+
+  } catch (e: any) {
+      console.error('Error al imprimir con QZ Tray:', e)
+      Swal.fire({
+          icon: 'error',
+          title: 'Error al imprimir',
+          text: 'Verifique que QZ Tray este instalado y ejecutandose.',
+          confirmButtonText: 'Entendido',
+      })
+  } finally {
+      imprimiendo.value = false
   }
 }
 </script>

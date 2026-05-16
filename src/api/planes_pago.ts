@@ -47,4 +47,21 @@ export const descargarTicketAbono = async (planId: number, pagoId: number): Prom
   return res.data
 }
 
+// obtiene el PDF del ticket de credito en base64 para impresion con QZ Tray
+export const obtenerTicketCreditoBase64 = async (
+    planId: number
+): Promise<{ pdf_base64: string; nombre_archivo: string }> => {
+    const res = await axiosInstance.get(`planes-pago/${planId}/ticket-credito-base64`)
+    return res.data.data
+}
+
+// obtiene el PDF del ticket de abono en base64 para impresion con QZ Tray
+export const obtenerTicketAbonoBase64 = async (
+    planId: number,
+    pagoId: number
+): Promise<{ pdf_base64: string; nombre_archivo: string }> => {
+    const res = await axiosInstance.get(`planes-pago/${planId}/pagos/${pagoId}/ticket-abono-base64`)
+    return res.data.data
+}
+
 export { getMetodosPago }

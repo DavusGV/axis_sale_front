@@ -7,6 +7,8 @@ export interface ConfiguracionEstablecimiento {
     imprimir_ticket_venta: boolean
     impresora_ancho: number
     impresora_alto: number
+    impresora_ticket: string | null
+    impresion_automatica: boolean
     formato_hora: '12h' | '24h'
     formato_fecha: string
     num_cuenta: string | null

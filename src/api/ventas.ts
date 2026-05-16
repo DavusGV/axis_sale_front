@@ -86,6 +86,12 @@ export async function descargarTicketPdf(ventaId: number) {
   return res
 }
 
+// obtiene el PDF del ticket de venta en base64 para impresion con QZ Tray
+export async function obtenerTicketBase64(ventaId: number): Promise<{ pdf_base64: string; nombre_archivo: string }> {
+    const res = await axiosInstance.get(`/ventas/${ventaId}/ticket-base64`)
+    return res.data.data
+}
+
 //funciones de historial
 // historial de ventas con filtros
 export async function fetchHistorialVentas(params: any = {}) {

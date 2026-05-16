@@ -766,12 +766,13 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
     />
 
     <ModalTicket
-      v-if="showModalTicket && ticketVentaId"
-      :id="ticketVentaId"
-      :tipo="ticketTipo"
-      :folio="ticketFolio"
-      :descargar="true"
-      @close="showModalTicket = false; ticketVentaId = null; ticketFolio = ''"
+        v-if="showModalTicket && ticketVentaId"
+        :id="ticketVentaId"
+        :tipo="ticketTipo"
+        :folio="ticketFolio"
+        :descargar="true"
+        :auto-imprimir="true"
+        @close="showModalTicket = false; ticketVentaId = null; ticketFolio = ''"
     />
 
     <!-- Modal precio servicio -->
