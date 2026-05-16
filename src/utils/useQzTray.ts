@@ -1,7 +1,28 @@
 import qz from 'qz-tray'
+import axiosInstance from '@/utils/axios'
 
 // estado de conexion compartido entre instancias
 let conectando = false
+
+// configura las promesas de certificado y firma antes de conectar
+function configurarSeguridad(): void {
+    // obtiene el certificado publico desde el backend
+    qz.security.setCertificatePromise((_resolve: (cert: string) => void, reject: (err: any) => void) => {
+        axiosInstance.get('/qztray/certificado', { responseType: 'text' })
+            .then(res => _resolve(res.data))
+            .catch(reject)
+    })
+
+    // firma el mensaje con la llave privada via backend
+    qz.security.setSignatureAlgorithm('SHA512')
+    qz.security.setSignaturePromise((mensaje: string) => {
+        return (_resolve: (firma: string) => void, reject: (err: any) => void) => {
+            axiosInstance.post('/qztray/firmar', { mensaje }, { responseType: 'text' })
+                .then(res => _resolve(res.data))
+                .catch(reject)
+        }
+    })
+}
 
 async function conectar(): Promise<void> {
     if (qz.websocket.isActive()) return
@@ -20,6 +41,7 @@ async function conectar(): Promise<void> {
 
     conectando = true
     try {
+        configurarSeguridad()
         await qz.websocket.connect()
     } finally {
         conectando = false
