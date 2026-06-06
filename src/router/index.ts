@@ -97,8 +97,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore'; 
 
 // aca vamos a ponder las importaciones para las vistas que se van a agregar
-import TableViewPermisos from '@/views/table/TableViewPermisos.vue';
-import TableViewRoles from '@/views/table/TableViewRoles.vue';
+import TableViewPermisos from '@/views/roles_and_permission/permissionView.vue';
+import TableViewRoles from '@/views/roles_and_permission/rolesView.vue';
 import TableViewUsuarios from '@/views/table/TableViewUsuarios.vue';
 import ProductosView from '@/views/configuracion/ProductsView.vue';
 import CajasView from '@/views/cajas/CajasView.vue';
@@ -120,6 +120,8 @@ import PersonalThreeVue from '@/views/dashboards/PersonalThree.vue';
 import CategoriaView from '@/views/products/CategoriaView.vue';
 import MovimientosView from '@/views/finanzas/MovimientosView.vue';
 import UnidadesMedidasView from '@/views/products/UnidadesMedidasView.vue';
+import PermissionView from '@/views/roles_and_permission/permissionView.vue';
+import RolesView from '@/views/roles_and_permission/rolesView.vue';
 
 
 const router = createRouter({
@@ -728,13 +730,13 @@ const router = createRouter({
     {
       path: '/permisos',
       name: 'permisos',
-      component: TableViewPermisos,
+      component: PermissionView,
       meta: { requiresAuth: true } 
     },
     {
       path: '/roles',
       name: 'roles',
-      component: TableViewRoles,
+      component: RolesView,
       meta: { requiresAuth: true } 
     },
     {
