@@ -117,6 +117,9 @@ export async function actualizarDetallesVenta(ventaId: number, data: any) {
   return res.data
 }
 
+export const resincronizarCredito = (id: number, payload: any) =>
+  axiosInstance.post(`/ventas/${id}/resincronizar-credito`, payload).then(r => r.data)
+
 // Exportar historial en Excel
 export async function exportHistorialExcel(params: any = {}) {
   const res = await axiosInstance.get('/ventas/historial/export/excel', {

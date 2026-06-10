@@ -251,7 +251,7 @@ async function confirmarCancelar(id: number) {
     })
     await cargarCotizaciones()
   } catch {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la cotizacion.' })
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la cotizacion.', confirmButtonColor: '#ef4444' })
   }
 }
 

@@ -45,6 +45,94 @@
             </div>
           </div>
 
+          <!-- panel de ajuste de anticipo solo en ventas a credito -->
+          <div v-if="props.venta.es_credito" class="mb-4 p-4 rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/10">
+
+            <div class="flex items-start gap-3">
+              <input
+                id="ajustar-anticipo-check"
+                v-model="ajustarAnticipo"
+                type="checkbox"
+                class="mt-1 cursor-pointer"
+              />
+              <label for="ajustar-anticipo-check" class="cursor-pointer text-sm">
+                <span class="font-semibold text-gray-800 dark:text-white block">
+                  Ajustar anticipo del crédito
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 block mt-1">
+                  Marcar solo si se devolvió o recibió dinero adicional del cliente.
+                  Esto modifica el anticipo registrado y el dinero en caja de esta venta.
+                </span>
+              </label>
+            </div>
+
+            <div v-if="ajustarAnticipo" class="mt-4 pt-4 border-t border-blue-200 dark:border-blue-700">
+
+              <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-2">
+                <span>Anticipo actual:</span>
+                <span class="font-semibold">${{ Number(anticipoActual).toFixed(2) }}</span>
+              </div>
+
+              <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                Nuevo anticipo
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <i class="fa-solid fa-money-bill-wave text-gray-400"></i>
+                </span>
+                <input
+                  v-model.number="nuevoAnticipo"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
+                        bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-500
+                        focus:ring-1 focus:ring-blue-400 transition text-sm"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div v-if="diferenciaAnticipo !== 0" class="mt-2 text-xs"
+                  :class="diferenciaAnticipo < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'">
+                <i class="fa-solid" :class="diferenciaAnticipo < 0 ? 'fa-arrow-down' : 'fa-arrow-up'"></i>
+                {{ diferenciaAnticipo < 0
+                  ? `Se devolverán $${Math.abs(diferenciaAnticipo).toFixed(2)} al cliente`
+                  : `Se recibirán $${diferenciaAnticipo.toFixed(2)} adicionales del cliente` }}
+              </div>
+            </div>
+          </div>
+
+          <!-- alerta de inconsistencias detectadas con opcion a resincronizar -->
+          <div
+            v-if="inconsistencias"
+            class="mb-4 p-4 rounded-lg border border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/10"
+          >
+            <div class="flex items-start gap-3">
+              <i class="fa-solid fa-triangle-exclamation text-yellow-500 mt-1"></i>
+              <div class="flex-1">
+                <p class="font-semibold text-yellow-700 dark:text-yellow-400 text-sm mb-2">
+                  Inconsistencias detectadas en este crédito
+                </p>
+                <ul class="text-xs text-yellow-700 dark:text-yellow-400 space-y-1 list-disc pl-4">
+                  <li v-for="(issue, idx) in inconsistencias" :key="idx">{{ issue }}</li>
+                </ul>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-3">
+                  Puedes corregir esto sin editar productos: marca "Ajustar anticipo" arriba,
+                  coloca el valor correcto y presiona "Resincronizar crédito".
+                </p>
+                <button
+                  class="mt-3 px-3 py-1.5 text-xs font-medium rounded-lg bg-yellow-500 hover:bg-yellow-600
+                        text-white transition flex items-center gap-2"
+                  @click="resincronizar"
+                  :disabled="resincronizando"
+                >
+                  <i class="fa-solid" :class="resincronizando ? 'fa-spinner fa-spin' : 'fa-rotate'"></i>
+                  {{ resincronizando ? 'Resincronizando...' : 'Resincronizar crédito' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- buscador de productos -->
           <div class="mb-4 relative">
             <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -210,7 +298,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { actualizarMetodoPago, actualizarDetallesVenta, getMetodosPago, fetchProducts } from '@/api/ventas'
+import { actualizarMetodoPago, actualizarDetallesVenta, getMetodosPago, fetchProducts, resincronizarCredito } from '@/api/ventas'
 import Swal from 'sweetalert2'
 
 interface ItemEditar {
@@ -243,6 +331,17 @@ const busquedaProducto = ref('')
 const resultadosBusqueda = ref<any[]>([])
 const buscando = ref(false)
 
+// ajuste de anticipo (solo en ventas a credito)
+const ajustarAnticipo = ref(false)
+const nuevoAnticipo   = ref(0)
+const anticipoActual  = ref(0)
+
+const diferenciaAnticipo = computed(() => {
+  if (!ajustarAnticipo.value) return 0
+  return Number(nuevoAnticipo.value || 0) - Number(anticipoActual.value || 0)
+})
+const resincronizando = ref(false)
+
 let timeoutBusqueda: ReturnType<typeof setTimeout> | null = null
 
 function onBuscarProducto() {
@@ -274,7 +373,10 @@ const hayCambios = computed(() => {
   if (metodoPagoId.value !== metodoPagoOriginalId.value) return true
   if (items.value.length !== itemsOriginalCount.value) return true
   if (items.value.some(item => item.detalle_id === 0)) return true
-  return items.value.some(item => item.cantidad !== item.cantidad_original)
+  if (items.value.some(item => item.cantidad !== item.cantidad_original)) return true
+  // tambien marca cambio si el anticipo fue ajustado
+  if (ajustarAnticipo.value && diferenciaAnticipo.value !== 0) return true
+  return false
 })
 
 function agregarProductoNuevo(producto: any) {
@@ -350,6 +452,14 @@ async function cargarDatos() {
 
     itemsOriginalCount.value = items.value.length
 
+    // si es credito leemos el anticipo actual del plan
+  if (props.venta.es_credito) {
+    // anticipo viene desde el endpoint de venta: ajusta el campo segun como lo expongas
+    // tomamos primero del prop si esta, si no quedara en 0 hasta que el operador lo edite
+    anticipoActual.value = Number(props.venta.anticipo ?? props.venta.pago ?? 0)
+    nuevoAnticipo.value  = anticipoActual.value
+  }
+
   } catch {
     Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar los datos.' })
     emit('close')
@@ -362,6 +472,48 @@ function onCambioMetodo() {
   const metodo = metodosPago.value.find((m: any) => m.id === metodoPagoId.value)
   if (metodo) metodoPagoNombre.value = metodo.nombre
 }
+
+// inconsistencias detectadas al abrir el modal
+const inconsistencias = computed(() => {
+  if (!props.venta.es_credito) return null
+
+  const total       = Number(props.venta.total ?? 0)
+  const pago        = Number(props.venta.pago ?? 0)
+  const anticipo    = Number(props.venta.anticipo ?? 0)
+  const totalAPagar = Number(props.venta.total_a_pagar ?? total)
+
+  // Suma real de los detalles del prop
+  const totalDetalles = (props.venta.detalles ?? []).reduce((acc: number, d: any) => {
+    const bruto = Number(d.precio) * Number(d.cantidad)
+    const desc  = Number(d.descuento_aplicado ?? 0)
+    return acc + bruto - desc
+  }, 0)
+
+  const issues: string[] = []
+
+  // Total de la venta no coincide con lo que suman los productos
+  if (Math.abs(total - totalDetalles) > 0.01) {
+    issues.push(
+      `El total guardado ($${total.toFixed(2)}) no coincide con la suma de los productos ($${totalDetalles.toFixed(2)}). La resincronización corregirá el total.`
+    )
+  }
+
+  // Pago en caja diferente al anticipo del plan
+  if (Math.abs(pago - anticipo) > 0.01) {
+    issues.push(
+      `El dinero en caja ($${pago.toFixed(2)}) no coincide con el anticipo del crédito ($${anticipo.toFixed(2)}).`
+    )
+  }
+
+  // Total del plan diferente al total de la venta (solo si el total ya es correcto)
+  if (Math.abs(total - totalDetalles) <= 0.01 && Math.abs(totalAPagar - total) > 0.01) {
+    issues.push(
+      `El total a pagar del crédito ($${totalAPagar.toFixed(2)}) no coincide con el total de la venta ($${total.toFixed(2)}).`
+    )
+  }
+
+  return issues.length ? issues : null
+})
 
 function subtotalItem(item: ItemEditar): number {
   const bruto = item.precio * item.cantidad
@@ -429,12 +581,97 @@ function eliminarProducto(item: ItemEditar) {
   })
 }
 
+async function resincronizar() {
+  const confirm = await Swal.fire({
+    icon: 'warning',
+    title: 'Resincronizar crédito',
+    html: `
+      <div class="text-left text-sm">
+        <p>Esta acción recalculará el plan de pago basándose en:</p>
+        <ul class="mt-2 mb-2" style="list-style: disc; padding-left: 20px;">
+          <li>El total actual de la venta</li>
+          <li>${ajustarAnticipo.value ? `El nuevo anticipo: <b>$${nuevoAnticipo.value.toFixed(2)}</b>` : `El anticipo actual: <b>$${anticipoActual.value.toFixed(2)}</b>`}</li>
+          <li>Los abonos ya registrados (no se modifican)</li>
+        </ul>
+        <b>¿Continuar?</b>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Sí, resincronizar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#eab308',
+    cancelButtonColor: '#6b7280',
+  })
+
+  if (!confirm.isConfirmed) return
+
+  resincronizando.value = true
+  try {
+    const payload: any = {}
+    if (ajustarAnticipo.value) {
+      payload.anticipo_ajustado = nuevoAnticipo.value
+    }
+
+    const respuesta   = await resincronizarCredito(props.venta.id, payload)
+    const planResumen = respuesta?.data?.plan_pago
+    const totalCorregido = respuesta?.data?.total_corregido
+    const totalReal      = respuesta?.data?.total_real
+
+    let mensajeExtra = ''
+
+    if (totalCorregido) {
+      mensajeExtra += `<p class="mb-2 text-orange-600 dark:text-orange-400"><b>Total corregido:</b> $${Number(totalReal).toFixed(2)}</p>`
+    }
+
+    mensajeExtra += `Nuevo saldo: <b>$${Number(planResumen.saldo_pendiente).toFixed(2)}</b>`
+
+    if (planResumen.anticipo_cambio) {
+      mensajeExtra += `<br>Anticipo: $${Number(planResumen.anticipo).toFixed(2)}`
+    }
+    if (planResumen.saldo_a_favor > 0) {
+      mensajeExtra += `<br><br><b class="text-orange-500">Saldo a favor: $${Number(planResumen.saldo_a_favor).toFixed(2)}</b><br>Gestionar con soporte.`
+    }
+    if (planResumen.estado === 'liquidado') {
+      mensajeExtra += '<br><br><b class="text-green-500">El plan quedó liquidado.</b>'
+    }
+
+    await Swal.fire({
+      icon: 'success',
+      title: 'Crédito resincronizado',
+      html: mensajeExtra,
+      confirmButtonColor: '#10b981',
+    })
+
+    emit('actualizado')
+    emit('close')
+
+  } catch (e: any) {
+    if (e?.response?.data?.requiere_soporte) {
+      const data = e.response.data
+      Swal.fire({
+        icon: 'error',
+        title: 'Requiere soporte',
+        html: `<p>${data.message}</p>`,
+        confirmButtonColor: '#ef4444',
+      })
+      return
+    }
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: e?.response?.data?.message || 'No se pudo resincronizar el crédito.'
+    })
+  } finally {
+    resincronizando.value = false
+  }
+}
+
 async function guardarCambios() {
   if (!items.value.length) {
     Swal.fire({ icon: 'warning', title: 'Sin productos', text: 'La venta debe tener al menos un producto.' })
     return
   }
-  
+
   // validamos stock de productos nuevos antes de guardar
   const sinStock = items.value.find(i => !i.es_servicio && i.detalle_id === 0 && i.stock_disponible !== null && i.cantidad > i.stock_disponible)
   if (sinStock) {
@@ -447,6 +684,68 @@ async function guardarCambios() {
     return
   }
 
+  // si esta ajustando anticipo validamos que sea coherente
+  if (props.venta.es_credito && ajustarAnticipo.value) {
+    if (nuevoAnticipo.value < 0) {
+      Swal.fire({ icon: 'warning', title: 'Anticipo invalido', text: 'El anticipo no puede ser negativo.' })
+      return
+    }
+    if (nuevoAnticipo.value > calcularTotal()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Anticipo excede el total',
+        text: `El anticipo ($${nuevoAnticipo.value.toFixed(2)}) no puede ser mayor al total de la venta ($${calcularTotal().toFixed(2)}). Si cubre todo, deja de ser credito.`,
+        confirmButtonColor: '#ef4444'
+      })
+      return
+    }
+  }
+
+  // si la venta es a credito pedimos confirmacion explicita
+  if (props.venta.es_credito) {
+    const totalActual = props.venta.total
+    const totalNuevo  = calcularTotal()
+    const diferencia  = totalActual - totalNuevo
+    const cambioTexto = diferencia > 0
+      ? `Total venta: bajará en <b>$${diferencia.toFixed(2)}</b>`
+      : (diferencia < 0
+          ? `Total venta: subirá en <b>$${Math.abs(diferencia).toFixed(2)}</b>`
+          : 'Total venta: sin cambios')
+
+    let textoAnticipo = ''
+    if (ajustarAnticipo.value && diferenciaAnticipo.value !== 0) {
+      textoAnticipo = diferenciaAnticipo.value < 0
+        ? `<br>Anticipo: bajará a <b>$${nuevoAnticipo.value.toFixed(2)}</b> (devolución de $${Math.abs(diferenciaAnticipo.value).toFixed(2)})`
+        : `<br>Anticipo: subirá a <b>$${nuevoAnticipo.value.toFixed(2)}</b> (entrega adicional de $${diferenciaAnticipo.value.toFixed(2)})`
+    } else {
+      textoAnticipo = `<br>Anticipo: se mantiene en <b>$${anticipoActual.value.toFixed(2)}</b>`
+    }
+
+    const confirm = await Swal.fire({
+      icon: 'warning',
+      title: 'Editar venta a crédito',
+      html: `
+        <div class="text-left text-sm">
+          <p>${cambioTexto}${textoAnticipo}</p>
+          <ul class="mt-3 mb-2" style="list-style: disc; padding-left: 20px;">
+            <li>Se recalculará el saldo del crédito.</li>
+            <li>Los abonos ya registrados <b>no se editan</b>.</li>
+            <li>Si los abonos cubren el nuevo total, el plan se liquida.</li>
+            <li>Si los abonos exceden el nuevo total, la edición se bloqueará y requerirá soporte.</li>
+          </ul>
+        </div>
+        <b>¿Continuar?</b>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, editar',
+      cancelButtonText: 'No, cancelar',
+      confirmButtonColor: '#f97316',
+      cancelButtonColor: '#6b7280',
+    })
+
+    if (!confirm.isConfirmed) return
+  }
+
   guardando.value = true
   try {
     // si cambio el metodo de pago lo actualizamos primero
@@ -457,11 +756,11 @@ async function guardarCambios() {
       })
     }
 
-    // si cambiaron los detalles los actualizamos
     const detallesCambiaron = items.value.some(i => i.cantidad !== i.cantidad_original)
       || items.value.length !== itemsOriginalCount.value
+    const anticipoCambio = ajustarAnticipo.value && diferenciaAnticipo.value !== 0
 
-    if (detallesCambiaron) {
+    if (detallesCambiaron || anticipoCambio) {
       const detalles = items.value.map(item => ({
         detalle_id:         item.detalle_id,
         producto_id:        item.producto_id,
@@ -472,7 +771,43 @@ async function guardarCambios() {
         descuento_aplicado: item.descuento_aplicado,
       }))
 
-      await actualizarDetallesVenta(props.venta.id, { detalles })
+      const payload: any = { detalles }
+      if (props.venta.es_credito) {
+        payload.confirmar_edicion_credito = true
+        // solo enviamos anticipo si el operador lo marco para ajuste
+        if (ajustarAnticipo.value) {
+          payload.anticipo_ajustado = nuevoAnticipo.value
+        }
+      }
+
+      const respuesta = await actualizarDetallesVenta(props.venta.id, payload)
+
+      const planResumen = respuesta?.data?.plan_pago
+      if (planResumen) {
+        let mensajeExtra = `Nuevo saldo: <b>$${Number(planResumen.saldo_pendiente).toFixed(2)}</b>`
+
+        if (planResumen.anticipo_cambio) {
+          mensajeExtra += `<br>Anticipo actualizado: $${Number(planResumen.anticipo).toFixed(2)}`
+        }
+
+        if (planResumen.saldo_a_favor > 0) {
+          mensajeExtra += `<br><br><b class="text-orange-500">Saldo a favor del cliente: $${Number(planResumen.saldo_a_favor).toFixed(2)}</b><br>Gestionar devolución con soporte.`
+        }
+        if (planResumen.estado === 'liquidado') {
+          mensajeExtra += '<br><br><b class="text-green-500">El plan quedó liquidado.</b>'
+        }
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Venta y crédito actualizados',
+          html: mensajeExtra,
+          confirmButtonColor: '#10b981',
+        })
+
+        emit('actualizado')
+        emit('close')
+        return
+      }
     }
 
     Swal.fire({
@@ -488,6 +823,27 @@ async function guardarCambios() {
     emit('close')
 
   } catch (e: any) {
+    // caso especial: el backend bloqueo por exceso de abonos
+    if (e?.response?.data?.requiere_soporte) {
+      const data = e.response.data
+      Swal.fire({
+        icon: 'error',
+        title: 'Requiere intervención de soporte',
+        html: `
+          <p class="mb-3">${data.message}</p>
+          <div class="text-left text-sm bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mt-2">
+            <div><b>Total abonado:</b> $${Number(data.total_abonado).toFixed(2)}</div>
+            <div><b>Nuevo total a pagar:</b> $${Number(data.nuevo_total).toFixed(2)}</div>
+            <div class="text-red-500 mt-1"><b>Excedente:</b> $${Number(data.excedente).toFixed(2)}</div>
+          </div>
+          <p class="mt-3 text-sm">Contacta a soporte para gestionar la devolución del excedente al cliente.</p>
+        `,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Entendido',
+      })
+      return
+    }
+
     Swal.fire({
       icon: 'error',
       title: 'Error',

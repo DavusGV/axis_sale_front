@@ -213,7 +213,7 @@ async function confirmarCancelar(venta: any) {
     })
     await cargarHistorial()
   } catch {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la venta.' })
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la venta.', confirmButtonColor: '#ef4444' })
   }
 }
 

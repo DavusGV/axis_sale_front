@@ -153,6 +153,7 @@
                 <input
                   v-model.number="montoAbono"
                   type="number"
+                  @focus="montoAbono === 0 ? montoAbono = undefined : null"
                   min="0.01"
                   step="0.01"
                   :max="planLocal.saldo_pendiente"
@@ -384,7 +385,8 @@ const montoValido = computed(() => {
 
 onMounted(async () => {
   await cargarPagos()
-  montoAbono.value = cuotaSugerida.value
+  // por ahora no sugiere cuota a pagar
+  montoAbono.value = 0
 
   // cargar metodos de pago del establecimiento
   try {
@@ -480,8 +482,8 @@ async function confirmarAbono() {
     // recargamos el plan completo y el historial desde el API
     await Promise.all([recargarPlan(), cargarPagos()])
 
-    // actualizamos el monto sugerido con el nuevo saldo
-    montoAbono.value = cuotaSugerida.value
+    // actualizamos el monto sugerido con el nuevo saldo (por ahora no sugiere cuota a pagar)
+    montoAbono.value = 0
 
     // notificamos al padre para que refresque la lista
     emits('abonado')
