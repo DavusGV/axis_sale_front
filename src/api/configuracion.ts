@@ -47,3 +47,11 @@ export async function guardarConfiguracion(data: Partial<ConfiguracionEstablecim
     const res = await axiosInstance.post('/configuracion', data)
     return res.data.data.configuracion
 }
+
+// descarga el certificado de QZ Tray como blob para guardarlo en disco
+export async function descargarCertificadoQzTray(): Promise<Blob> {
+    const res = await axiosInstance.get('/qztray/descargar-certificado', {
+        responseType: 'blob',
+    })
+    return res.data
+}

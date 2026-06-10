@@ -260,6 +260,21 @@
                       ></i>
                       {{ cargandoImpresoras ? 'Buscando...' : 'Detectar' }}
                   </button>
+                  <!-- boton para descargar el certificado de QZ Tray -->
+                  <button
+                      class="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-100 dark:bg-blue-900/30
+                            text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/40
+                            transition flex items-center gap-1 flex-shrink-0"
+                      :disabled="descargandoCertificado"
+                      @click="descargarCertificado"
+                      title="Descargar certificado para instalarlo manualmente en QZ Tray"
+                  >
+                      <i
+                          class="fa-solid"
+                          :class="descargandoCertificado ? 'fa-spinner fa-spin' : 'fa-certificate'"
+                      ></i>
+                      {{ descargandoCertificado ? 'Descargando...' : 'Certificado' }}
+                  </button>
               </div>
 
               <!-- impresora actualmente guardada si no se han cargado aun -->
@@ -526,7 +541,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import TopBanner from '@/components/shared/TopBanner.vue'
-import { fetchConfiguracion, guardarConfiguracion, subirLogo, eliminarLogo } from '@/api/configuracion'
+import { fetchConfiguracion, guardarConfiguracion, subirLogo, eliminarLogo, descargarCertificadoQzTray } from '@/api/configuracion'
 import { useConfiguracionStore } from '@/stores/configuracionStore'
 import { useQzTray } from '@/utils/useQzTray'
 import Swal from 'sweetalert2'
@@ -554,6 +569,7 @@ const subiendoLogo = ref(false)
 const eliminandoLogo = ref(false)
 
 // variables para configurar la impresora de tickets
+const descargandoCertificado = ref(false)
 const { listarImpresoras } = useQzTray()
 const impresorasDisponibles = ref<string[]>([])
 const cargandoImpresoras = ref(false)
@@ -643,6 +659,40 @@ async function cargarImpresoras() {
         impresorasDisponibles.value = []
     } finally {
         cargandoImpresoras.value = false
+    }
+}
+
+// descarga el certificado de QZ Tray para que el usuario lo instale manualmente
+async function descargarCertificado() {
+    descargandoCertificado.value = true
+    try {
+        const blob = await descargarCertificadoQzTray()
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = 'digital-certificate.txt'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Certificado descargado',
+            text: 'Instálalo manualmente en QZ Tray para evitar la advertencia.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+        })
+    } catch {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo descargar el certificado.',
+        })
+    } finally {
+        descargandoCertificado.value = false
     }
 }
 
