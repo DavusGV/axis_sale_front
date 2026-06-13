@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { IconDotsVertical } from '@tabler/icons-vue'
 import { onClickOutside } from '@vueuse/core'
+import { PERMISSIONS } from '@/utils/permissions/pemissions';
+import { can } from '@/utils/permissions/validationPermission';
 const props = defineProps<{
   fromBottom: boolean
   onDelete: () => void
@@ -28,7 +30,7 @@ const toggleOpen = () => {
       ref="target"
     >
       <li v-if="props.onEdit">
-        <button
+        <button 
           @click="props.onEdit"
           class="py-2 w-full text-left hover:bg-primary/10 rounded-md hover:text-primary duration-300 block px-3"
         >
@@ -36,7 +38,7 @@ const toggleOpen = () => {
         </button>
       </li>
       <li v-if="props.onDetails">
-        <button
+        <button v-if="can(PERMISSIONS.BOX_EDIT)"
           @click="props.onDetails()"
           class="py-2 w-full text-left hover:bg-primary/10 rounded-md hover:text-primary duration-300 block px-3"
         >

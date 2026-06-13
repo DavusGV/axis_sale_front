@@ -1,42 +1,66 @@
-import { computed, ref, watch  } from 'vue'
+import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
+import { useRouter } from 'vue-router'
+
 import axiosInstance from '@/utils/axios'
 import Swal from 'sweetalert2'
-import { useRouter } from 'vue-router'
-import { es } from '@faker-js/faker'
+import { decodePermissions } from '@/utils/permissions/decoderPermission'
 
 export const useAuthStore = defineStore('auth', () => {
+
   const token = ref(localStorage.getItem('token') || '')
   const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+  const roles = ref(JSON.parse(localStorage.getItem('roles') || '[]'))
+
   const establishments = ref(JSON.parse(localStorage.getItem('establishments') || '[]'))
-  const establishmentActive = ref<number | null>(JSON.parse(localStorage.getItem('establishmentActive') || 'null'))
+  const establishmentActive = ref<number | null>(
+    JSON.parse(localStorage.getItem('establishmentActive') || 'null')
+  )
+  const permissions = ref(new Set())
   const loading = ref(false)
   const router = useRouter()
 
-  // validamos que el id del usuario sea igual a 1 
-  const isMainUser = computed(() => {
-    return user.value?.id === 1
-  })
+  
+  const decoder = (rolesData: any[]) => {
+    roles.value = rolesData
+    permissions.value = new Set(decodePermissions(rolesData))
+  }
+
+  const clearSession = () => {
+    token.value = ''
+    user.value = {}
+    roles.value = []
+    permissions.value = new Set()
+    establishments.value = []
+    establishmentActive.value = null
+
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('roles')
+    localStorage.removeItem('establishments')
+    localStorage.removeItem('establishmentActive')
+  }
+
+
+  // Inicializar permisos al recargar la página
+  decoder(roles.value)
+
 
   const login = async (email: string, password: string) => {
     loading.value = true
-    const payload = { email, password}
+
     try {
-      const response = await axiosInstance.post('login', payload)
-      const { token: newToken, user: newUser, establishment: newEstablishment } = response.data.data
-      token.value = newToken
-      user.value = newUser
-      establishments.value = newEstablishment
-      //se selecciona el primer etablecimiento asignado por defecto
-      establishmentActive.value = newEstablishment.length? newEstablishment[0].id: null
+      const response = await axiosInstance.post('login', { email, password })
+
+      const {
+        token: newToken,
+        user: newUser,
+        establishment: newEstablishment,
+        roles: newRoles
+      } = response.data.data
 
 
-      localStorage.setItem('token', newToken)
-      localStorage.setItem('user', JSON.stringify(newUser))
-      localStorage.setItem('establishments', JSON.stringify(newEstablishment))
-      localStorage.setItem('establishmentActive', JSON.stringify(establishmentActive.value))
-      
-      // si no tiene establecimiento asignado hacr un logout de sesion
+      // validar que el usuario tenga al menos un establecimiento asignado
       if (!newEstablishment || newEstablishment.length === 0) {
 
         loading.value = false
@@ -47,37 +71,42 @@ export const useAuthStore = defineStore('auth', () => {
           text: 'Es Necesario Contactar al Proveedor.',
           confirmButtonColor: '#8e210cff'
         })
-         // Limpiar estado y sesión
-          token.value = ''
-          user.value = {}
-          establishments.value = []
-          establishmentActive.value = null
 
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          localStorage.removeItem('establishments')
-          localStorage.removeItem('establishmentActive')
-
-          router.push('/login')
-
+        clearSession()
+        router.push('/login')
         return
       }
-      // si el usuarios tiene establecimoento asignado manda a ventas
-      establishmentActive.value = newEstablishment[0].id
-        localStorage.setItem('establishmentActive',JSON.stringify(establishmentActive.value))
-        loading.value = false
 
-        Swal.fire({
-          icon: 'success',
-          title: `¡Hola ${newUser.name}!`,
-          text: 'Bienvenido de nuevo',
-          color: '#2E7D32',
-          confirmButtonColor: '#2E7D32'
-        })
-        router.push('/ventas/ventas')
+      token.value = newToken
+      user.value = newUser
+      establishments.value = newEstablishment
+      establishmentActive.value = newEstablishment[0].id
+      // Decodificar permisos y actualizar el store
+      decoder(newRoles || [])
+      
+      // guardar en localStorage
+      localStorage.setItem('token', newToken)
+      localStorage.setItem('user', JSON.stringify(newUser))
+      localStorage.setItem('roles', JSON.stringify(newRoles || []))
+      localStorage.setItem('establishments', JSON.stringify(newEstablishment))
+      localStorage.setItem('establishmentActive', JSON.stringify(establishmentActive.value))
+
+      loading.value = false
+
+      Swal.fire({
+        icon: 'success',
+        title: `¡Hola ${newUser.name}!`,
+        text: 'Bienvenido de nuevo',
+        color: '#2E7D32',
+        confirmButtonColor: '#2E7D32'
+      })
+
+      router.push('/ventas/ventas')
 
     } catch (error: any) {
+
       loading.value = false
+
       if (error.response && error.response.status === 401) {
         Swal.fire({
           icon: 'info',
@@ -91,10 +120,12 @@ export const useAuthStore = defineStore('auth', () => {
           text: 'Ocurrió un error inesperado. Por favor, intenta nuevamente'
         })
       }
+
       console.error('Error al iniciar sesión:', error)
     }
   }
 
+ 
   const logout = async () => {
     try {
       await axiosInstance.post('logout', {}, {
@@ -105,33 +136,17 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error: any) {
       console.error('Error al cerrar sesion en el servidor:', error)
     } finally {
-      // limpiar siempre, aunque falle el backend
-      token.value = ''
-      user.value = {}
-      establishments.value = []
-      establishmentActive.value = null
-
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      localStorage.removeItem('establishments')
-      localStorage.removeItem('establishmentActive')
-
+      clearSession()
       router.push('/login')
     }
   }
 
-  // Sincroniza el establecimiento activo con localStorage 
-  // para que Axios lo envíe en cada request (X-Establishment-ID)
-  watch(establishmentActive, (val) => {
-    if (val !== null) {
-      localStorage.setItem('establishmentActive', JSON.stringify(val))
-    }
-  })
-
+ 
   const refreshUser = async () => {
     try {
       const res = await axiosInstance.get('perfil')
       const updatedUser = res.data.data.user
+
       user.value = updatedUser
       localStorage.setItem('user', JSON.stringify(updatedUser))
     } catch (e) {
@@ -139,5 +154,25 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, user, isMainUser, establishments, establishmentActive, loading, login, logout, refreshUser }
+  //watcher para sincronizar el establecimiento activo con localStorage
+
+  watch(establishmentActive, (val) => {
+    if (val !== null) {
+      localStorage.setItem('establishmentActive', JSON.stringify(val))
+    }
+  })
+
+
+  return {
+    token,
+    user,
+    roles,
+    permissions,
+    establishments,
+    establishmentActive,
+    loading,
+    login,
+    logout,
+    refreshUser
+  }
 })
