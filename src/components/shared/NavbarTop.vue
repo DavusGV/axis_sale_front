@@ -5,6 +5,7 @@ import { useLayoutStore } from '@/stores/layoutStore'
 import NotificationDropdown from '../topbar/NotificationDropdown.vue'
 import SwitchLanguage from '../topbar/SwitchLanguage.vue'
 import ProfileDropDown from '../topbar/ProfileDropDown.vue'
+import QuickAccessButtons from '../topbar/QuickAccessButtons.vue'
 import useWindowSize from '@/utils/useWindowSize'
 import { useAuthStore } from '@/stores/authStore'
 import { useConfiguracionStore } from '@/stores/configuracionStore'
@@ -105,8 +106,9 @@ watch(
 
     <div class="flex items-center gap-3 sm:gap-4 xxl:gap-6">
       <ModeSwitcherVue />
-      <NotificationDropdown />
-      <SwitchLanguage />
+      <QuickAccessButtons />  
+      <!-- <NotificationDropdown />
+      <SwitchLanguage /> --> 
       <ProfileDropDown />
     </div>
   </nav>
