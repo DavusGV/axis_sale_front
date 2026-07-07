@@ -120,6 +120,12 @@ export async function fetchHistorialBalance(params: { meses: number }) {
   return res.data.data
 }
 
+// Saldo acumulado historico (ingresos - gastos), solo se usa si arrastre_saldo esta activo
+export async function fetchArrastreSaldo() {
+  const res = await axiosInstance.get('/finance/balance/arrastre')
+  return res.data.data
+}
+
 // Exportar balance en Excel
 export async function exportBalanceExcel(params: { fecha_inicio: string; fecha_fin: string }) {
   const res = await axiosInstance.get('/finance/balance/export/excel', {

@@ -2,6 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import VueApexCharts from 'vue3-apexcharts'
 import { useLayoutStore } from '@/stores/layoutStore'
+import { useConfiguracionStore } from '@/stores/configuracionStore'
+import { fetchBalanceMensual, fetchArrastreSaldo } from '@/api/finanzas'
 
 const props = defineProps<{
   month: number
@@ -9,17 +11,16 @@ const props = defineProps<{
 }>()
 
 const { theme } = useLayoutStore()
+const configuracionStore = useConfiguracionStore()
 
 // ------------------------------------------------------------
-// Estado
+// Estado balance del mes
 // ------------------------------------------------------------
 const loading   = ref(false)
 const ingresos  = ref(0)
 const gastos    = ref(0)
 const balance   = ref(0)
 const esGanancia = ref(true)
-
-import { fetchBalanceMensual } from '@/api/finanzas'
 
 async function cargarBalance() {
   if (!props.month || !props.year) return
@@ -39,6 +40,42 @@ async function cargarBalance() {
 
 watch([() => props.month, () => props.year], cargarBalance)
 onMounted(cargarBalance)
+
+// ------------------------------------------------------------
+// Estado arrastre de saldo historico
+// ------------------------------------------------------------
+const cargandoArrastre   = ref(false)
+const ingresosTotales    = ref(0)
+const gastosTotales      = ref(0)
+const saldoArrastre      = ref(0)
+const arrastreEsGanancia = ref(true)
+
+async function cargarArrastre() {
+  if (!configuracionStore.arrastre_saldo) return
+  cargandoArrastre.value = true
+  try {
+    const d = await fetchArrastreSaldo()
+    ingresosTotales.value    = Number(d.ingresos_totales ?? 0)
+    gastosTotales.value      = Number(d.gastos_totales   ?? 0)
+    saldoArrastre.value      = Number(d.saldo_arrastre   ?? 0)
+    arrastreEsGanancia.value = d.es_ganancia ?? saldoArrastre.value >= 0
+  } catch (e) {
+    console.error('Error al cargar el arrastre de saldo:', e)
+  } finally {
+    cargandoArrastre.value = false
+  }
+}
+
+watch(
+  () => configuracionStore.cargada,
+  (cargada) => {
+    if (cargada) {
+      cargarArrastre()
+    }
+  }
+)
+
+onMounted(cargarArrastre)
 
 // Grafica media dona
 const chartSeries = computed(() => [ingresos.value, gastos.value])
@@ -167,4 +204,48 @@ const porcentajeGastos = computed(() => {
 
     </div>
   </div>
+
+  <!-- arrastre de saldo historico, solo si esta activo en configuracion -->
+  <div
+    v-if="configuracionStore.arrastre_saldo"
+    class="mt-4 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700"
+  >
+    <p class="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2 flex items-center gap-1">
+      <i class="fa-solid fa-layer-group text-indigo-400"></i>
+      Saldo acumulado historico
+    </p>
+
+    <div v-if="cargandoArrastre" class="text-center text-gray-400 py-3 text-xs">
+      Cargando arrastre...
+    </div>
+
+    <div v-else>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2 text-center">
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Ingresos totales</p>
+          <p class="text-sm font-bold text-emerald-600">${{ ingresosTotales.toFixed(2) }}</p>
+        </div>
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 text-center">
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Gastos totales</p>
+          <p class="text-sm font-bold text-blue-500">${{ gastosTotales.toFixed(2) }}</p>
+        </div>
+      </div>
+
+      <div
+        class="rounded-lg px-3 py-2 text-center"
+        :class="arrastreEsGanancia
+          ? 'bg-emerald-50 dark:bg-emerald-900/20'
+          : 'bg-blue-50 dark:bg-blue-900/20'"
+      >
+        <p class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Saldo general acumulado</p>
+        <p
+          class="text-lg font-extrabold"
+          :class="arrastreEsGanancia ? 'text-emerald-600' : 'text-blue-500'"
+        >
+          {{ saldoArrastre < 0 ? '-' : '' }}${{ Math.abs(saldoArrastre).toFixed(2) }}
+        </p>
+      </div>
+    </div>
+  </div>
+
 </template>

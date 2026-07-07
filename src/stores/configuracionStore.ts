@@ -9,6 +9,7 @@ export const useConfiguracionStore = defineStore('configuracion', () => {
     const impresora_ticket      = ref<string | null>(null) 
     const impresora_ancho       = ref<number>(80) 
     const impresion_automatica  = ref(false) 
+    const arrastre_saldo        = ref(false)
     const cargada = ref(false)
 
     // carga la configuracion del establecimiento activo desde la API
@@ -22,6 +23,7 @@ export const useConfiguracionStore = defineStore('configuracion', () => {
             impresora_ticket.value        = config.impresora_ticket ?? null
             impresora_ancho.value         = config.impresora_ancho ?? 80
             impresion_automatica.value    = Boolean(config.impresion_automatica)
+            arrastre_saldo.value          = Boolean(config.arrastre_saldo)
             cargada.value                 = true
         } catch {
             // si falla dejamos los valores por defecto
@@ -36,6 +38,7 @@ export const useConfiguracionStore = defineStore('configuracion', () => {
         impresora_ticket.value        = null
         impresora_ancho.value         = 80
         impresion_automatica.value    = false
+        arrastre_saldo.value          = false
         cargada.value                 = false
     }
 
@@ -46,6 +49,7 @@ export const useConfiguracionStore = defineStore('configuracion', () => {
         impresora_ticket,
         impresora_ancho,
         impresion_automatica,
+        arrastre_saldo,
         cargada,
         cargar,
         resetear,

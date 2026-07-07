@@ -13,6 +13,7 @@ export interface ConfiguracionEstablecimiento {
     formato_fecha: string
     num_cuenta: string | null
     descuento_con_decimales: boolean
+    arrastre_saldo: boolean
 }
 
 // sube o actualiza el logo del establecimiento

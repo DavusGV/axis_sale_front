@@ -309,6 +309,25 @@
                   />
               </button>
           </div>
+          <!-- toggle: arrastre de saldo historico en balance -->
+          <div class="flex items-center justify-between py-3 border-b dark:border-gray-700">
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Arrastre de saldo</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Muestra en Balance el saldo acumulado de todos los ingresos y gastos historicos.
+              </p>
+            </div>
+            <button
+              @click="form.arrastre_saldo = !form.arrastre_saldo"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition flex-shrink-0"
+              :class="form.arrastre_saldo ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+            >
+              <span
+                class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition"
+                :class="form.arrastre_saldo ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+          </div>
           <!-- Agregan mas toggles aqui siguiendo el mismo patron -->
 
         </div>
@@ -559,7 +578,8 @@ const form = ref({
     formato_hora: '12h' as '12h' | '24h',
     formato_fecha: 'd/m/Y',
     num_cuenta: '' as string,
-    descuento_con_decimales: false
+    descuento_con_decimales: false,
+    arrastre_saldo: false,
 })
 
 const nombreEstablecimiento = ref<string>('Mi Negocio')
@@ -593,6 +613,7 @@ onMounted(async () => {
         form.value.formato_fecha          = config.formato_fecha
         form.value.num_cuenta             = config.num_cuenta ?? ''
         form.value.descuento_con_decimales = config.descuento_con_decimales
+        form.value.arrastre_saldo         = config.arrastre_saldo ?? false
     } catch(e) {
         console.error('error en fetchConfiguracion:', e)
     }
