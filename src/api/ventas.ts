@@ -52,8 +52,8 @@ export async function fetchProducts(params: ProductFilters = {}) {
 }
 
 // Función para buscar producto por código de barras
-export async function buscarPorCodigoBarras(codigo: string) {
-  const res = await axiosInstance.post('/ventas/read-code', { codigo })
+export async function buscarPorCodigoBarras(codigo: string, carrito: any[]) {
+  const res = await axiosInstance.post('/ventas/read-code', { codigo, carrito })
   return res.data
 }
 
