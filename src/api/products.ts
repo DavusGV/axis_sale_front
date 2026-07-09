@@ -92,3 +92,100 @@ export async function fetchUnidadesMedidasSelect() {
   // retorna solo el array para uso en select
   return res.data.data as { id: number; unidad: string; abreviatura: string }[]
 }
+
+// descarga el template Excel del establecimiento activo
+export async function downloadProductsTemplate() {
+  const res = await axiosInstance.get('/products/template/download', {
+    responseType: 'blob'
+  })
+ 
+  // disparamos descarga en el navegador
+  const blob = new Blob([res.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `plantilla_productos_${Date.now()}.xlsx`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+ 
+// envia el archivo al backend para validacion y preview
+export interface ImportPreviewResponse {
+  token: string | null
+  total_filas: number
+  validas: number
+  con_errores: number
+  errores: { fila: number; errores: string[] }[]
+  mensaje?: string
+}
+ 
+export async function previewProductsImport(file: File): Promise<ImportPreviewResponse> {
+  const form = new FormData()
+  form.append('archivo', file)
+ 
+  const res = await axiosInstance.post('/products/import/preview', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+ 
+  // el backend usa el helper Success que envuelve la data
+  return res.data.data ?? res.data
+}
+ 
+// ejecuta la importacion definitiva
+// si hay filas fallidas el backend devuelve un blob (.xlsx)
+// si todo salio bien devuelve JSON
+export interface ImportExecuteResult {
+  insertados: number
+  total_fallidas: number
+  archivoDescargado: boolean
+}
+ 
+export async function executeProductsImport(token: string): Promise<ImportExecuteResult> {
+  const res = await axiosInstance.post(
+    '/products/import',
+    { token },
+    { responseType: 'blob' }
+  )
+ 
+  // detectamos si la respuesta es JSON o binario
+  // si es JSON el content-type es application/json y el blob lo podemos leer como texto
+  const contentType = res.headers['content-type'] || ''
+ 
+  if (contentType.includes('application/json')) {
+    // todo salio bien, no hubo fallidas
+    const text = await (res.data as Blob).text()
+    const json = JSON.parse(text)
+    const data = json.data ?? json
+    return {
+      insertados: data.insertados ?? 0,
+      total_fallidas: 0,
+      archivoDescargado: false
+    }
+  }
+ 
+  // hubo fallidas, descargamos el archivo de errores automaticamente
+  const insertados = parseInt(res.headers['x-insertados'] ?? '0', 10)
+  const totalFallidas = parseInt(res.headers['x-total-fallidas'] ?? '0', 10)
+ 
+  const blob = new Blob([res.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `productos_fallidos_${Date.now()}.xlsx`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+ 
+  return {
+    insertados,
+    total_fallidas: totalFallidas,
+    archivoDescargado: true
+  }
+}

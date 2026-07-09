@@ -89,7 +89,17 @@
             class="mt-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex flex-col gap-2
                   border border-gray-200 dark:border-gray-600"
           >
-            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Nuevo cliente</p>
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Nuevo cliente</p>
+              <button
+                type="button"
+                class="text-gray-400 hover:text-red-500 transition"
+                title="Cerrar"
+                @click="showFormCliente = false"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
             <div class="grid grid-cols-2 gap-2">
               <input
                 v-model="nuevoCliente.nombre"
@@ -302,7 +312,7 @@ async function registrarNuevoCliente() {
     Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: e?.response?.data?.message || 'No se pudo registrar el cliente.'
+      text: e?.response?.data?.data || e?.response?.data?.message || 'No se pudo registrar el cliente.'
     })
   } finally {
     loadingCliente.value = false

@@ -7,6 +7,8 @@ export interface ConfiguracionEstablecimiento {
     imprimir_ticket_venta: boolean
     impresora_ancho: number
     impresora_alto: number
+    impresora_ticket: string | null
+    impresion_automatica: boolean
     formato_hora: '12h' | '24h'
     formato_fecha: string
     num_cuenta: string | null
@@ -44,4 +46,12 @@ export async function fetchConfiguracion(): Promise<ConfiguracionResponse> {
 export async function guardarConfiguracion(data: Partial<ConfiguracionEstablecimiento>) {
     const res = await axiosInstance.post('/configuracion', data)
     return res.data.data.configuracion
+}
+
+// descarga el certificado de QZ Tray como blob para guardarlo en disco
+export async function descargarCertificadoQzTray(): Promise<Blob> {
+    const res = await axiosInstance.get('/qztray/descargar-certificado', {
+        responseType: 'blob',
+    })
+    return res.data
 }

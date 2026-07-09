@@ -133,7 +133,7 @@
               Al ser servicio, el precio de compra puede quedar en 0.
             </p>
             <label class="block text-sm mb-1">Precio Compra</label>
-            <input v-model.number="form.precio_compra" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required />
+            <input v-model.number="form.precio_compra" @focus="limpiarCero('precio_compra')" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required />
           </div>
 
           <!-- PRECIO VENTA -->
@@ -142,7 +142,7 @@
               Al ser servicio, el precio de venta se define al momento de la venta.
             </p>
             <label class="block text-sm mb-1">Precio Venta</label>
-            <input v-model.number="form.precio_venta" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required />
+            <input v-model.number="form.precio_venta" @focus="limpiarCero('precio_venta')" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required />
           </div>
 
           <!-- IVA -->
@@ -172,8 +172,23 @@
             <p v-if="form.es_servicio" class="text-xs text-amber-500 mt-1">
               Al ser servicio, el stock queda en 0.
             </p>
-            <label class="block text-sm mb-1">Stock</label>
-            <input v-model.number="form.stock" type="number" min="0" class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700" required/>
+            <label class="block text-sm mb-1">
+              Stock
+              <span v-if="!esCreacion" class="text-xs text-gray-400 ml-1">(solo lectura)</span>
+            </label>
+            <input
+              v-model.number="form.stock"
+              type="number"
+              min="0"
+              @focus="limpiarCero('stock')"
+              :disabled="!esCreacion"
+              :required="esCreacion"
+              class="input w-full dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            />
+            <p v-if="!esCreacion" class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+              <i class="fa-solid fa-circle-info mr-1"></i>
+              Para modificar el stock usa la accion "Actualizar stock" del menu de productos.
+            </p>
           </div>
 
           <!-- UNIDAD DE MEDIDA -->
@@ -298,6 +313,10 @@ function resetForm() {
     autogenerar: false,
   }
   previewImage.value = null
+}
+
+function limpiarCero(campo: 'precio_compra' | 'precio_venta' | 'stock') {
+  if (form.value[campo] === 0) form.value[campo] = undefined
 }
 
 function openFileDialog() {

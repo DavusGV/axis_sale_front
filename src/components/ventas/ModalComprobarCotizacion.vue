@@ -730,7 +730,6 @@ async function confirmarVenta({ pago, metodo_pago, metodo_pago_id, total_final, 
   const detalles = items.value
     .filter(i => i.cantidad > 0)
     .map(item => ({
-      // cliente_id no va aqui, va en ventaData
       producto_id:        item.producto_id,
       cantidad:           item.cantidad,
       precio:             item.precio,
@@ -741,7 +740,7 @@ async function confirmarVenta({ pago, metodo_pago, metodo_pago_id, total_final, 
       descuento_aplicado: calcularDescuentoItem(item),
     }))
 
-  const ventaData = {
+  const ventaData: any = {
     usuario_id,
     // primero el que selecciono en ModalPago, si no el de la cotizacion
     cliente_id:  cliente_id ?? props.cotizacion.cliente_id ?? null,
@@ -754,6 +753,12 @@ async function confirmarVenta({ pago, metodo_pago, metodo_pago_id, total_final, 
     detalles,
   }
 
+  // si es credito reenviamos el objeto credito al backend
+  // para que VentasController genere el plan de pago dentro de la misma transaccion
+  if (es_credito && credito) {
+    ventaData.credito = credito
+  }
+
   try {
     Swal.fire({
       title: 'Convirtiendo cotización...',
@@ -764,12 +769,28 @@ async function confirmarVenta({ pago, metodo_pago, metodo_pago_id, total_final, 
     const resultado = await convertirCotizacion(props.cotizacion.id, ventaData)
 
     Swal.close()
+
+    // validacion de seguridad: si era credito el resultado debe traer plan_pago
+    // si no viene, avisamos para que el operador no cierre el flujo creyendo que quedo bien
+    if (es_credito) {
+      const planCreado = resultado?.data?.plan_pago ?? resultado?.data?.venta?.plan_pago ?? null
+
+      if (!planCreado) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Plan de pago no generado',
+          html: 'La venta se registró pero no se pudo crear el plan de pago del crédito.<br><br>' +
+                'No cierres esta ventana. Intenta de nuevo en un momento para que el crédito quede correctamente registrado.',
+          confirmButtonColor: '#f97316',
+        })
+        return
+      }
+    }
+
     showModalPago.value = false
 
     // emitimos el id y el folio de la venta para el ticket
     emit('vendido', resultado.data.venta.id, resultado.data.venta.folio)
-    emit('close')
-
     emit('close')
 
   } catch (e: any) {

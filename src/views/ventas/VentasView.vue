@@ -54,6 +54,7 @@ const total = computed(() =>
     } else if (item.tipo_descuento === 'monto') {
       descAplicado = (item.descuento ?? 0) * item.cantidad
     }
+    
 
     return acc + (subtotal - descAplicado)
   }, 0)
@@ -145,43 +146,49 @@ function detenerEscuchaScanner() {
 }
 
 function manejarTeclaScanner(event: KeyboardEvent) {
-  // Ignorar si el usuario esta escribiendo en el input de busqueda
-  if (event.target instanceof HTMLInputElement ||
-      event.target instanceof HTMLTextAreaElement) {
+  // Ignorar si el usuario está escribiendo en inputs
+  if (
+    event.target instanceof HTMLInputElement ||
+    event.target instanceof HTMLTextAreaElement
+  ) {
     return
   }
 
-  // Solo procesar teclas numericas y Enter
-  if ((event.key >= '0' && event.key <= '9') || event.key === 'Enter') {
-
-    if (event.key === 'Enter') {
-      procesarCodigoEscaneado()
-      event.preventDefault()
-    } else {
-      codigoBuffer += event.key
-
-      if (timeoutScanner) clearTimeout(timeoutScanner)
-
-      timeoutScanner = setTimeout(() => {
-        if (codigoBuffer.length >= 3) { // Minimo 3 digitos
-          procesarCodigoEscaneado()
-        } else {
-          codigoBuffer = ''
-        }
-      }, TIEMPO_ESPERA_SCANNER)
-    }
+  // Procesar Enter
+  if (event.key === 'Enter') {
+    procesarCodigoEscaneado()
+    event.preventDefault()
+    return
   }
+
+  // Aceptar letras y números
+  const esLetraONumero = /^[a-zA-Z0-9]$/.test(event.key)
+
+  if (!esLetraONumero) {
+    return
+  }
+
+  codigoBuffer += event.key
+
+  if (timeoutScanner) clearTimeout(timeoutScanner)
+
+  timeoutScanner = setTimeout(() => {
+    if (codigoBuffer.trim().length >= 3) {
+      procesarCodigoEscaneado()
+    } else {
+      codigoBuffer = ''
+    }
+  }, TIEMPO_ESPERA_SCANNER)
 }
 
 async function procesarCodigoEscaneado() {
   if (!codigoBuffer) return
 
-  const codigo = codigoBuffer
-  codigoBuffer = '' // Limpiar buffer
-
+    const codigo = codigoBuffer.trim().replace(/\r|\n/g, '')
+    codigoBuffer = '' // Limpiar buffer
   try {
     // buscamos el producto por codigo de barra
-    const resultado = await buscarPorCodigoBarras(codigo)
+    const resultado = await buscarPorCodigoBarras(codigo, carrito.value)
 
     if (resultado.success && resultado.producto) {
       agregarAlCarrito(resultado.producto)
@@ -766,12 +773,13 @@ async function registrarCotizacionLocal({ cliente_id, expires_at, notas }: any) 
     />
 
     <ModalTicket
-      v-if="showModalTicket && ticketVentaId"
-      :id="ticketVentaId"
-      :tipo="ticketTipo"
-      :folio="ticketFolio"
-      :descargar="true"
-      @close="showModalTicket = false; ticketVentaId = null; ticketFolio = ''"
+        v-if="showModalTicket && ticketVentaId"
+        :id="ticketVentaId"
+        :tipo="ticketTipo"
+        :folio="ticketFolio"
+        :descargar="true"
+        :auto-imprimir="true"
+        @close="showModalTicket = false; ticketVentaId = null; ticketFolio = ''"
     />
 
     <!-- Modal precio servicio -->

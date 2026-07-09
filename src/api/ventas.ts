@@ -52,8 +52,8 @@ export async function fetchProducts(params: ProductFilters = {}) {
 }
 
 // Función para buscar producto por código de barras
-export async function buscarPorCodigoBarras(codigo: string) {
-  const res = await axiosInstance.post('/ventas/read-code', { codigo })
+export async function buscarPorCodigoBarras(codigo: string, carrito: any[]) {
+  const res = await axiosInstance.post('/ventas/read-code', { codigo, carrito })
   return res.data
 }
 
@@ -86,6 +86,12 @@ export async function descargarTicketPdf(ventaId: number) {
   return res
 }
 
+// obtiene el PDF del ticket de venta en base64 para impresion con QZ Tray
+export async function obtenerTicketBase64(ventaId: number): Promise<{ pdf_base64: string; nombre_archivo: string }> {
+    const res = await axiosInstance.get(`/ventas/${ventaId}/ticket-base64`)
+    return res.data.data
+}
+
 //funciones de historial
 // historial de ventas con filtros
 export async function fetchHistorialVentas(params: any = {}) {
@@ -110,6 +116,9 @@ export async function actualizarDetallesVenta(ventaId: number, data: any) {
   const res = await axiosInstance.put(`/ventas/${ventaId}/detalles`, data)
   return res.data
 }
+
+export const resincronizarCredito = (id: number, payload: any) =>
+  axiosInstance.post(`/ventas/${id}/resincronizar-credito`, payload).then(r => r.data)
 
 // Exportar historial en Excel
 export async function exportHistorialExcel(params: any = {}) {
