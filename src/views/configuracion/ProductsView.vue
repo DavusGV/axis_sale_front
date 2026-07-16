@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import ProductModal from '@/components/products/ProductsModal.vue'
 import ProductsImportModal from '@/components/products/ProductsImportModal.vue'
 import StockUpdateModal from '@/components/products/StockUpdateModal.vue'
+import BarcodesModal from '@/components/products/BarcodesModal.vue'
 
 // ---------- STATE ----------
 const router = useRouter()
@@ -34,7 +35,9 @@ const categoriaSeleccionada = ref<string | number>('')
 const unidades              = ref<any[]>([])
 const unidadSeleccionada    = ref<string | number>('')
 
-// dropdown menu de acciones por producto (mismo patron que cotizaciones)
+const showBarcodesModal = ref(false)
+
+// dropdown menu de acciones por producto
 const dropdownAbierto = ref<number | string | null>(null)
 const dropdownRefs    = ref<Record<string, HTMLElement | null>>({})
 const dropdownStyle   = ref<Record<string, string>>({})
@@ -308,6 +311,10 @@ onMounted(async () => {
 <template>
   <TopBanner title="Productos">
     <div class="flex justify-end gap-4 lg:gap-6">
+      <button class="btn-outline" @click="showBarcodesModal = true">
+        <i class="fa-solid fa-barcode"></i>
+        Códigos de barras
+      </button>
       <button class="btn-outline" @click="openImportModal">
         <i class="fa-solid fa-file-arrow-up"></i>
         Importar
@@ -516,5 +523,10 @@ onMounted(async () => {
     :producto="productoStock"
     @close="cerrarStockModal"
     @saved="onStockActualizado"
+  />
+
+  <BarcodesModal
+    :show="showBarcodesModal"
+    @close="showBarcodesModal = false"
   />
 </template>
