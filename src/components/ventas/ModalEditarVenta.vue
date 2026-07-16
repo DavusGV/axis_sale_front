@@ -45,6 +45,67 @@
             </div>
           </div>
 
+          <!-- cliente de la venta -->
+          <div class="mb-4 relative">
+            <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Cliente
+              <span v-if="props.venta.es_credito" class="text-xs text-red-400 font-normal">*requerido</span>
+              <span v-else class="text-xs text-gray-400 font-normal">(opcional)</span>
+            </label>
+
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <i class="fa-solid fa-user text-gray-400"></i>
+              </span>
+              <input
+                v-model="busquedaCliente"
+                @input="onBuscarCliente"
+                type="text"
+                placeholder="Buscar cliente por nombre..."
+                class="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700
+                      bg-white dark:bg-gray-800 focus:outline-none focus:border-green-500
+                      focus:ring-1 focus:ring-green-400 transition text-sm"
+                autocomplete="off"
+              />
+
+              <!-- dropdown de resultados -->
+              <ul
+                v-if="resultadosClientes.length"
+                class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200
+                      dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+              >
+                <li
+                  v-for="cli in resultadosClientes"
+                  :key="cli.id"
+                  @click="seleccionarCliente(cli)"
+                  class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm flex justify-between items-center"
+                >
+                  <span class="font-medium text-gray-800 dark:text-white">{{ cli.nombre }} {{ cli.apellido_p }}</span>
+                  <span class="text-xs text-gray-400">{{ cli.telefono1 }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <p v-if="buscandoCliente" class="text-xs text-gray-400 mt-1">
+              <i class="fa-solid fa-spinner fa-spin mr-1"></i> Buscando...
+            </p>
+
+            <!-- cliente seleccionado -->
+            <div
+              v-if="clienteSeleccionado"
+              class="mt-2 flex items-center justify-between bg-green-50 dark:bg-green-900/30
+                    border border-green-200 dark:border-green-700 rounded-lg px-3 py-2 text-sm"
+            >
+              <span class="font-medium text-green-700 dark:text-green-300">
+                <i class="fa-solid fa-circle-check mr-1"></i>
+                {{ clienteSeleccionado.nombre }} {{ clienteSeleccionado.apellido_p }}
+              </span>
+              <button @click="quitarCliente" type="button" class="text-gray-400 hover:text-red-500" title="Quitar cliente">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+
           <!-- panel de ajuste de anticipo solo en ventas a credito -->
           <div v-if="props.venta.es_credito" class="mb-4 p-4 rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/10">
 
@@ -298,7 +359,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { actualizarMetodoPago, actualizarDetallesVenta, getMetodosPago, fetchProducts, resincronizarCredito } from '@/api/ventas'
+import { actualizarMetodoPago, actualizarDetallesVenta, getMetodosPago, fetchProducts, resincronizarCredito, actualizarClienteVenta } from '@/api/ventas'
+import { buscarClientes } from '@/api/clientes'
 import Swal from 'sweetalert2'
 
 interface ItemEditar {
@@ -335,6 +397,15 @@ const buscando = ref(false)
 const ajustarAnticipo = ref(false)
 const nuevoAnticipo   = ref(0)
 const anticipoActual  = ref(0)
+
+// cliente de la venta
+const clienteId           = ref<number | null>(null)
+const clienteOriginalId   = ref<number | null>(null)
+const clienteSeleccionado = ref<any | null>(null)
+const busquedaCliente     = ref('')
+const resultadosClientes  = ref<any[]>([])
+const buscandoCliente     = ref(false)
+let timeoutCliente: ReturnType<typeof setTimeout> | null = null
 
 const diferenciaAnticipo = computed(() => {
   if (!ajustarAnticipo.value) return 0
@@ -376,6 +447,7 @@ const hayCambios = computed(() => {
   if (items.value.some(item => item.cantidad !== item.cantidad_original)) return true
   // tambien marca cambio si el anticipo fue ajustado
   if (ajustarAnticipo.value && diferenciaAnticipo.value !== 0) return true
+  if (clienteId.value !== clienteOriginalId.value) return true
   return false
 })
 
@@ -411,6 +483,53 @@ function agregarProductoNuevo(producto: any) {
   // limpiamos la busqueda
   busquedaProducto.value = ''
   resultadosBusqueda.value = []
+}
+
+function onBuscarCliente() {
+  if (timeoutCliente) clearTimeout(timeoutCliente)
+
+  const q = busquedaCliente.value.trim()
+  if (q.length < 2) {
+    resultadosClientes.value = []
+    return
+  }
+
+  timeoutCliente = setTimeout(async () => {
+    buscandoCliente.value = true
+    try {
+      const body = await buscarClientes(q)
+      // mismo shape que usa el modal de venta: body.data.clientes
+      resultadosClientes.value = body?.data?.clientes ?? body?.clientes ?? []
+    } catch {
+      resultadosClientes.value = []
+    } finally {
+      buscandoCliente.value = false
+    }
+  }, 300)
+}
+
+function seleccionarCliente(cli: any) {
+  clienteId.value           = cli.id
+  clienteSeleccionado.value = cli
+  busquedaCliente.value     = ''
+  resultadosClientes.value  = []
+}
+
+function quitarCliente() {
+  // una venta a credito debe conservar cliente
+  if (props.venta.es_credito) {
+    Swal.fire({
+      icon: 'info',
+      title: 'No permitido',
+      text: 'Una venta a crédito debe tener un cliente asignado.',
+      confirmButtonColor: '#3b82f6',
+    })
+    return
+  }
+  clienteId.value           = null
+  clienteSeleccionado.value = null
+  busquedaCliente.value     = ''
+  resultadosClientes.value  = []
 }
 
 onMounted(async () => {
@@ -450,15 +569,24 @@ async function cargarDatos() {
       descuento_aplicado: d.descuento_aplicado,
     }))
 
+    // prefijamos el cliente actual de la venta
+    clienteId.value         = props.venta.cliente_id ?? null
+    clienteOriginalId.value = props.venta.cliente_id ?? null
+    // si la venta ya trae cliente lo mostramos como seleccionado (el nombre viene del historial)
+    clienteSeleccionado.value = props.venta.cliente_id
+      ? { id: props.venta.cliente_id, nombre: props.venta.cliente ?? '', apellido_p: '' }
+      : null
+    busquedaCliente.value   = ''
+
     itemsOriginalCount.value = items.value.length
 
     // si es credito leemos el anticipo actual del plan
-  if (props.venta.es_credito) {
-    // anticipo viene desde el endpoint de venta: ajusta el campo segun como lo expongas
-    // tomamos primero del prop si esta, si no quedara en 0 hasta que el operador lo edite
-    anticipoActual.value = Number(props.venta.anticipo ?? props.venta.pago ?? 0)
-    nuevoAnticipo.value  = anticipoActual.value
-  }
+    if (props.venta.es_credito) {
+      // anticipo viene desde el endpoint de venta: ajusta el campo segun como lo expongas
+      // tomamos primero del prop si esta, si no quedara en 0 hasta que el operador lo edite
+      anticipoActual.value = Number(props.venta.anticipo ?? props.venta.pago ?? 0)
+      nuevoAnticipo.value  = anticipoActual.value
+    }
 
   } catch {
     Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar los datos.' })
@@ -659,7 +787,7 @@ async function resincronizar() {
     Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: e?.response?.data?.message || 'No se pudo resincronizar el crédito.'
+      text: e?.response?.data?.data || e?.response?.data?.message || e?.message || 'No se pudo resincronizar el crédito.'
     })
   } finally {
     resincronizando.value = false
@@ -701,8 +829,14 @@ async function guardarCambios() {
     }
   }
 
-  // si la venta es a credito pedimos confirmacion explicita
-  if (props.venta.es_credito) {
+  // detectamos que cambios reales hay para decidir si se recalcula el credito
+  const detallesCambiaron = items.value.some(i => i.cantidad !== i.cantidad_original)
+    || items.value.length !== itemsOriginalCount.value
+  const anticipoCambio = ajustarAnticipo.value && diferenciaAnticipo.value !== 0
+
+  // solo confirmamos el recalculo si cambian productos o anticipo
+  // cambiar solo el cliente o el metodo de pago no altera el saldo del credito
+  if (props.venta.es_credito && (detallesCambiaron || anticipoCambio)) {
     const totalActual = props.venta.total
     const totalNuevo  = calcularTotal()
     const diferencia  = totalActual - totalNuevo
@@ -756,9 +890,10 @@ async function guardarCambios() {
       })
     }
 
-    const detallesCambiaron = items.value.some(i => i.cantidad !== i.cantidad_original)
-      || items.value.length !== itemsOriginalCount.value
-    const anticipoCambio = ajustarAnticipo.value && diferenciaAnticipo.value !== 0
+    // si cambio el cliente lo actualizamos (agregar, cambiar o quitar)
+    if (clienteId.value !== clienteOriginalId.value) {
+      await actualizarClienteVenta(props.venta.id, { cliente_id: clienteId.value })
+    }
 
     if (detallesCambiaron || anticipoCambio) {
       const detalles = items.value.map(item => ({

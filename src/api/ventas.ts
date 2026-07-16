@@ -117,6 +117,12 @@ export async function actualizarDetallesVenta(ventaId: number, data: any) {
   return res.data
 }
 
+// actualiza el cliente asignado a una venta (agregar, cambiar o quitar)
+export const actualizarClienteVenta = async (id: number, payload: { cliente_id: number | null }) => {
+  const res = await axiosInstance.put(`ventas/${id}/cliente`, payload)
+  return res.data
+}
+
 export const resincronizarCredito = (id: number, payload: any) =>
   axiosInstance.post(`/ventas/${id}/resincronizar-credito`, payload).then(r => r.data)
 
