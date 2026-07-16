@@ -143,7 +143,7 @@ async function cargarPdf() {
       pdfBlob.value = blob
       pdfUrl.value  = window.URL.createObjectURL(blob) + `#zoom=${zoomPdf.value}&toolbar=0&navpanes=0&scrollbar=0&view=FitH`
 
-      if (props.descargar) {
+      if (props.descargar && configuracionStore.ticket_descargar_auto) {
           setTimeout(() => descargarPDF(), 500)
       }
 

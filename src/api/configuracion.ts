@@ -14,6 +14,26 @@ export interface ConfiguracionEstablecimiento {
     num_cuenta: string | null
     descuento_con_decimales: boolean
     arrastre_saldo: boolean
+    ticket_descargar_auto: boolean
+}
+
+// valores por defecto: al agregar un campo nuevo al interface de arriba,
+// agregalo aqui tambien. El store ya lo toma solo, sin tocar el store.
+export const configuracionDefaults: ConfiguracionEstablecimiento = {
+    id: 0,
+    establecimiento_id: 0,
+    modo_iva: 'sin_iva',
+    imprimir_ticket_venta: true,
+    impresora_ancho: 80,
+    impresora_alto: 200,
+    impresora_ticket: null,
+    impresion_automatica: false,
+    formato_hora: '12h',
+    formato_fecha: 'd/m/Y',
+    num_cuenta: null,
+    descuento_con_decimales: false,
+    arrastre_saldo: false,
+    ticket_descargar_auto: false,
 }
 
 // sube o actualiza el logo del establecimiento

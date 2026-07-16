@@ -309,6 +309,27 @@
                   />
               </button>
           </div>
+
+          <!-- toggle: descargar ticket automaticamente -->
+          <div class="flex items-center justify-between py-3 border-b dark:border-gray-700">
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Descargar ticket automaticamente</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Descarga el PDF del ticket al completar una venta. Si esta apagado, solo se imprime.
+              </p>
+            </div>
+            <button
+              @click="form.ticket_descargar_auto = !form.ticket_descargar_auto"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition flex-shrink-0"
+              :class="form.ticket_descargar_auto ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+            >
+              <span
+                class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition"
+                :class="form.ticket_descargar_auto ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+          </div>
+
           <!-- toggle: arrastre de saldo historico en balance -->
           <div class="flex items-center justify-between py-3 border-b dark:border-gray-700">
             <div>
@@ -571,6 +592,7 @@ const configuracionStore = useConfiguracionStore()
 const form = ref({
     modo_iva: 'sin_iva' as 'sin_iva' | 'iva_incluido' | 'iva_adicional',
     imprimir_ticket_venta: true,
+    ticket_descargar_auto: false,
     impresora_ancho: 80,
     impresora_alto: 200,
     impresora_ticket: null as string | null, 
@@ -605,6 +627,7 @@ onMounted(async () => {
 
         form.value.modo_iva               = config.modo_iva
         form.value.imprimir_ticket_venta  = config.imprimir_ticket_venta
+        form.value.ticket_descargar_auto  = config.ticket_descargar_auto ?? false
         form.value.impresora_ancho        = config.impresora_ancho
         form.value.impresora_alto         = config.impresora_alto
         form.value.impresora_ticket       = config.impresora_ticket ?? null
