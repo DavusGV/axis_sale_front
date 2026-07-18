@@ -9,7 +9,9 @@ import "jsvectormap/dist/maps/world.js";
 import "jsvectormap/dist/css/jsvectormap.css";
 import ToastService from 'primevue/toastservice';
 import '@fortawesome/fontawesome-free/css/all.min.css'
+import { initAntiDevTools } from './utils/antiDevTools'
 
+initAntiDevTools()
 
 const app = createApp(App)
 app.use(ToastService);

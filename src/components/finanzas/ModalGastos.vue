@@ -12,13 +12,18 @@ const emit = defineEmits(["close","saved"])
 
 const loading = ref(false)
 
+function fechaHoy(): string {
+  const now = new Date()
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+}
+
 const form = ref({
   tipo_gasto_id: '',
   metodo_pago_id: '',
   concepto: '',
   descripcion: '',
   monto: '',
-  fecha: new Date().toISOString().slice(0, 10),
+  fecha: fechaHoy(),
   state: 1
 })
 
