@@ -22,8 +22,25 @@ defineProps<{
     </div>
 
     <!-- loading -->
-    <div v-if="loading" class="py-12 text-center text-sm text-gray-400">
-      Generando vista previa...
+    <div
+      v-if="loading"
+      class="mx-auto bg-white shadow-sm border border-gray-300 animate-pulse"
+      style="width: 100%; max-width: 400px; aspect-ratio: 8.5 / 11; padding: 4%;"
+    >
+      <div
+        class="grid h-full"
+        :style="{
+          gridTemplateColumns: `repeat(${preview?.columnas ?? 4}, 1fr)`,
+          gridTemplateRows: `repeat(${preview?.filas ?? 10}, 1fr)`,
+          gap: '3px',
+        }"
+      >
+        <div
+          v-for="n in (preview?.columnas ?? 4) * (preview?.filas ?? 10)"
+          :key="n"
+          class="border border-gray-200 bg-gray-200 dark:bg-gray-600 rounded-sm"
+        ></div>
+      </div>
     </div>
 
     <!-- sin resultados -->

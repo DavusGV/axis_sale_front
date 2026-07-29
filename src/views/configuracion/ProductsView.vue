@@ -99,7 +99,6 @@ const columns = [
 ]
 
 const filtros = ref({
-  page:             1,
   search:           '',
   categoria_id:     '',
   unidad_medida_id: '',
@@ -123,10 +122,10 @@ async function loadUnidades() {
   }
 }
 
-async function loadProducts() {
+async function loadProducts(p = 1) {
   loading.value = true
   try {
-    const res = await fetchProducts(filtros.value)
+    const res = await fetchProducts({ ...filtros.value, page: p })
     productos.value  = res.data
     currentPage.value = res.current_page
     totalPages.value  = res.last_page
@@ -142,9 +141,8 @@ async function loadProducts() {
 
 // recarga al cambiar cualquier filtro
 watch(filtros, () => {
-  filtros.value.page = 1
-  currentPage.value  = 1
-  loadProducts()
+  currentPage.value = 1
+  loadProducts(1)
 }, { deep: true })
 
 // busqueda manual desde input
@@ -162,21 +160,16 @@ watch(unidadSeleccionada, (val) => {
 
 // paginacion
 function paginate(page: number) {
-  currentPage.value  = page
-  filtros.value.page = page
-  loadProducts()
+  currentPage.value = page
+  loadProducts(page)
 }
 
 function nextPage() {
-  if (currentPage.value < totalPages.value) {
-    paginate(currentPage.value + 1)
-  }
+  if (currentPage.value < totalPages.value) paginate(currentPage.value + 1)
 }
 
 function prevPage() {
-  if (currentPage.value > 1) {
-    paginate(currentPage.value - 1)
-  }
+  if (currentPage.value > 1) paginate(currentPage.value - 1)
 }
 
 // acciones
@@ -245,7 +238,6 @@ function limpiarFiltros() {
   categoriaSeleccionada.value = ''
   unidadSeleccionada.value    = ''
   filtros.value = {
-    page: 1,
     search: '',
     categoria_id: '',
     unidad_medida_id: '',
@@ -277,10 +269,12 @@ async function handleDelete(id: number) {
       confirmButtonColor: '#3b82f6',
     })
     await loadProducts()
-  } catch {
+  } catch (e: any) {
+    const mensaje = e.response?.data?.data?.message || e.response?.data?.message ||
+      'No se pudo eliminar el producto'
     Swal.fire({
       title: 'Advertencia',
-      text: 'No se pudo eliminar el producto',
+      text: mensaje,
       icon: 'warning',
       color: '#1f2937',
       confirmButtonColor: '#3b82f6',
@@ -475,7 +469,7 @@ onMounted(async () => {
               class="py-2 w-full text-left hover:bg-green-50 dark:hover:bg-gray-700
                     rounded-md duration-300 px-3 flex items-center gap-2 text-green-600 dark:text-green-400"
             >
-              <i class="fa-solid fa-arrow-up-arrow-down text-xs"></i>
+              <i class="fa-solid fa-arrow-down-up-across-line text-xs"></i>
               Actualizar stock
             </button>
           </li>
