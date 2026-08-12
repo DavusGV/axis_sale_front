@@ -4,6 +4,7 @@ import axiosInstance from '@/utils/axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 import { es } from '@faker-js/faker'
+import { useSuscripcionStore } from '@/stores/suscripcionStore'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || '')
@@ -12,6 +13,7 @@ export const useAuthStore = defineStore('auth', () => {
   const establishmentActive = ref<number | null>(JSON.parse(localStorage.getItem('establishmentActive') || 'null'))
   const loading = ref(false)
   const router = useRouter()
+  const suscripcionStore = useSuscripcionStore()
 
   // validamos que el id del usuario sea igual a 1 
   const isMainUser = computed(() => {
@@ -65,6 +67,10 @@ export const useAuthStore = defineStore('auth', () => {
       // si el usuarios tiene establecimoento asignado manda a ventas
       establishmentActive.value = newEstablishment[0].id
         localStorage.setItem('establishmentActive',JSON.stringify(establishmentActive.value))
+
+        // se consulta el estado de la suscripcion del establecimiento seleccionado
+        await suscripcionStore.cargarEstado()
+
         loading.value = false
 
         Swal.fire({
@@ -74,6 +80,13 @@ export const useAuthStore = defineStore('auth', () => {
           color: '#2E7D32',
           confirmButtonColor: '#2E7D32'
         })
+
+        // si el establecimiento esta bloqueado se manda a la pantalla de acceso limitado
+        if (suscripcionStore.bloqueado) {
+          router.push({ name: 'acceso-limitado' })
+          return
+        }
+
         router.push('/ventas/ventas')
 
     } catch (error: any) {
@@ -110,6 +123,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = {}
       establishments.value = []
       establishmentActive.value = null
+      suscripcionStore.limpiar()
 
       localStorage.removeItem('token')
       localStorage.removeItem('user')
@@ -122,9 +136,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Sincroniza el establecimiento activo con localStorage 
   // para que Axios lo envíe en cada request (X-Establishment-ID)
-  watch(establishmentActive, (val) => {
+  watch(establishmentActive, async (val) => {
     if (val !== null) {
       localStorage.setItem('establishmentActive', JSON.stringify(val))
+      // cada establecimiento tiene su propia suscripcion, se recarga el estado
+      await suscripcionStore.cargarEstado()
     }
   })
 

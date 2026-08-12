@@ -120,6 +120,21 @@ import PersonalThreeVue from '@/views/dashboards/PersonalThree.vue';
 import CategoriaView from '@/views/products/CategoriaView.vue';
 import MovimientosView from '@/views/finanzas/MovimientosView.vue';
 import UnidadesMedidasView from '@/views/products/UnidadesMedidasView.vue';
+import AccesoLimitado from '@/views/suscripcion/AccesoLimitado.vue';
+import BlankLayout from '@/layouts/BlankLayout.vue';
+import { useSuscripcionStore } from '@/stores/suscripcionStore'
+import SuscripcionesView from '@/views/suscripcion/SuscripcionesView.vue';
+import CuentasDepositoView from '@/views/suscripcion/CuentasDepositoView.vue';
+import PagosSuscripcionView from '@/views/suscripcion/PagosSuscripcionView.vue';
+
+// tipado de las propiedades personalizadas las rutas
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    permitidoBloqueado?: boolean
+    layout?: unknown
+  }
+}
 
 
 const router = createRouter({
@@ -881,6 +896,30 @@ const router = createRouter({
       component: PersonalThreeVue,
       meta: { requiresAuth: true } 
     },
+    {
+      path: '/acceso-limitado',
+      name: 'acceso-limitado',
+      component: AccesoLimitado,
+      meta: { requiresAuth: true, permitidoBloqueado: true, layout: BlankLayout },
+    },
+    {
+      path: '/suscripciones',
+      name: 'suscripciones',
+      component: SuscripcionesView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/suscripciones/cuentas-deposito',
+      name: 'cuentas-deposito',
+      component: CuentasDepositoView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/suscripciones/pagos',
+      name: 'suscripcion-pagos',
+      component: PagosSuscripcionView,
+      meta: { requiresAuth: true }
+    },
 
     
   ],
@@ -888,18 +927,39 @@ const router = createRouter({
     return { top: 0 }
   }
 })
+
+
+
 // Guardias de navegación para proteger rutas
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!authStore.token) {
-      next({ name: 'login' })
-    } else {
-      next()
-    }
-  } else {
-    next()
+
+  if (!to.matched.some(record => record.meta.requiresAuth)) {
+    return next()
   }
+
+  if (!authStore.token) {
+    return next({ name: 'login' })
+  }
+
+  const suscripcionStore = useSuscripcionStore()
+
+  // al recargar la pagina el store queda vacio, se consulta el estado
+  if (!suscripcionStore.datos && !suscripcionStore.loading) {
+    await suscripcionStore.cargarEstado()
+  }
+
+  // si el acceso esta limitado solo se permiten las rutas marcadas
+  if (suscripcionStore.bloqueado && to.meta.permitidoBloqueado !== true) {
+    return next({ name: 'acceso-limitado' })
+  }
+
+  // si ya se regularizo el pago no tiene caso quedarse en la pantalla de bloqueo
+  if (!suscripcionStore.bloqueado && to.name === 'acceso-limitado') {
+    return next('/ventas/ventas')
+  }
+
+  next()
 })
 
 export default router

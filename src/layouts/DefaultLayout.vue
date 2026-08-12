@@ -8,6 +8,7 @@ import TwoColumnSidebar from '@/components/sidebars/TwoColumnSidebar.vue';
 import HoveredSidebar from '@/components/sidebars/HoveredSidebar.vue';
 import TopNavHorizontal from '@/components/shared/TopNavHorizontal.vue';
 import useWindowSize from '@/utils/useWindowSize';
+import AvisoSuscripcion from '@/components/suscripcion/AvisoSuscripcion.vue';
 
 const { theme } = useLayoutStore()
 const isSidebarOpen = ref(false)
@@ -61,6 +62,9 @@ const { windowSize } = useWindowSize()
             </div>
             <Footer />
         </main>
+
+        <!-- aviso de vencimiento de la suscripcion -->
+        <AvisoSuscripcion />
     </div>
 </template>
 

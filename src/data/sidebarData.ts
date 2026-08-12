@@ -52,6 +52,7 @@ export const sidebarData = [
                     { title: "Roles", url: "/roles" },
                     { title: "Establecimiento", url: "/establecimiento" },
                     { title: "Usuarios", url: "/usuarios" }, 
+                    { title: "Suscripciones", url: "/suscripciones" }
                 ],
             }
         ],
