@@ -5,9 +5,11 @@ export type BarcodeTipoCantidad = 'unica' | 'personalizada' | 'stock'
 
 export interface BarcodeParams {
   modo: BarcodeModo
-  producto_id?: number | null
+  producto_ids?: number[] | null
   tipo_cantidad: BarcodeTipoCantidad
+  usar_cantidad_general?: boolean
   cantidad?: number
+  cantidades?: Record<number, number>
   incluir_precio?: boolean
 }
 

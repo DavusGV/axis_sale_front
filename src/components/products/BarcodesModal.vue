@@ -16,14 +16,18 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 // estado del formulario
 const modo = ref<'todos' | 'especifico'>('todos')
 const tipoCantidad = ref<'unica' | 'personalizada' | 'stock'>('unica')
-const cantidad = ref<number>(1)
 const incluirPrecio = ref(false)
 
-// busqueda de producto especifico
+// cantidad personalizada: general (un solo input para todos) o individual (por producto)
+const usarCantidadGeneral = ref(true)
+const cantidadGeneral = ref<number | null>(null)
+const cantidadesIndividuales = ref<Record<number, number>>({})
+
+// busqueda de productos especificos (multiples)
 const busqueda = ref('')
 const resultados = ref<any[]>([])
 const buscando = ref(false)
-const productoSeleccionado = ref<any | null>(null)
+const productosSeleccionados = ref<any[]>([])
 
 // preview
 const preview = ref<BarcodePreviewResponse | null>(null)
@@ -31,18 +35,43 @@ const cargandoPreview = ref(false)
 const generando = ref(false)
 
 // arma los params actuales para el backend
-const params = computed<BarcodeParams>(() => ({
-  modo: modo.value,
-  producto_id: modo.value === 'especifico' ? productoSeleccionado.value?.id ?? null : null,
-  tipo_cantidad: tipoCantidad.value,
-  cantidad: tipoCantidad.value === 'personalizada' ? Number(cantidad.value) : undefined,
-  incluir_precio: incluirPrecio.value,
-}))
+const params = computed<BarcodeParams>(() => {
+  const base: BarcodeParams = {
+    modo: modo.value,
+    producto_ids: modo.value === 'especifico'
+      ? productosSeleccionados.value.map(p => p.id)
+      : null,
+    tipo_cantidad: tipoCantidad.value,
+    incluir_precio: incluirPrecio.value,
+  }
+
+  if (tipoCantidad.value === 'personalizada') {
+    base.usar_cantidad_general = usarCantidadGeneral.value
+    if (usarCantidadGeneral.value) {
+      base.cantidad = Number(cantidadGeneral.value)
+    } else {
+      base.cantidades = { ...cantidadesIndividuales.value }
+    }
+  }
+
+  return base
+})
 
 // valida si ya se puede pedir preview o generar
 const listoParaGenerar = computed(() => {
-  if (modo.value === 'especifico' && !productoSeleccionado.value) return false
-  if (tipoCantidad.value === 'personalizada' && (!cantidad.value || cantidad.value < 1)) return false
+  if (modo.value === 'especifico' && productosSeleccionados.value.length === 0) return false
+
+  if (tipoCantidad.value === 'personalizada') {
+    if (usarCantidadGeneral.value) {
+      if (!cantidadGeneral.value || cantidadGeneral.value < 1) return false
+    } else {
+      const faltaAlguna = productosSeleccionados.value.some(
+        p => !cantidadesIndividuales.value[p.id] || cantidadesIndividuales.value[p.id] < 1
+      )
+      if (faltaAlguna) return false
+    }
+  }
+
   return true
 })
 
@@ -69,13 +98,27 @@ async function cargarPreview() {
 }
 
 // recalcula el preview cuando cambian las opciones
-watch([modo, tipoCantidad, cantidad, incluirPrecio, productoSeleccionado], programarPreview)
+watch(
+  [modo, tipoCantidad, incluirPrecio, usarCantidadGeneral, cantidadGeneral],
+  programarPreview
+)
+// la lista y el mapa de cantidades individuales se observan aparte con deep
+watch(productosSeleccionados, programarPreview, { deep: true })
+watch(cantidadesIndividuales, programarPreview, { deep: true })
 
-// buscador de producto especifico reutilizando fetchProducts con search
+// al activar la cantidad general se deja el input en blanco para que el
+// usuario la escriba a proposito, evitando que se mande 0 por accidente
+// si activo el toggle sin querer. las cantidades individuales no se pierden,
+// quedan guardadas por si vuelve a desactivarlo.
+watch(usarCantidadGeneral, (activo) => {
+  if (activo) {
+    cantidadGeneral.value = null
+  }
+})
+
+// buscador de productos reutilizando fetchProducts con search
 let busquedaTimer: any = null
 watch(busqueda, () => {
-  // si ya hay uno seleccionado y el texto coincide, no re-buscamos
-  if (productoSeleccionado.value && busqueda.value === productoSeleccionado.value.nombre) return
   clearTimeout(busquedaTimer)
   busquedaTimer = setTimeout(buscarProductos, 350)
 })
@@ -89,7 +132,9 @@ async function buscarProductos() {
   buscando.value = true
   try {
     const res = await fetchProducts({ search: termino, per_page: 8 })
-    resultados.value = res.data ?? []
+    const idsSeleccionados = productosSeleccionados.value.map(p => p.id)
+    // no debe poder seleccionarse un producto que ya esta en la lista
+    resultados.value = (res.data ?? []).filter((p: any) => !idsSeleccionados.includes(p.id))
   } catch {
     resultados.value = []
   } finally {
@@ -97,16 +142,27 @@ async function buscarProductos() {
   }
 }
 
-function seleccionarProducto(p: any) {
-  productoSeleccionado.value = p
-  busqueda.value = p.nombre
+function agregarProducto(p: any) {
+  const yaExiste = productosSeleccionados.value.some(sel => sel.id === p.id)
+  if (yaExiste) return
+  productosSeleccionados.value.push(p)
+  // cantidad individual arranca en 1 por defecto
+  cantidadesIndividuales.value[p.id] = 1
+  busqueda.value = ''
   resultados.value = []
 }
 
-function limpiarSeleccion() {
-  productoSeleccionado.value = null
-  busqueda.value = ''
-  resultados.value = []
+function quitarProducto(id: number) {
+  productosSeleccionados.value = productosSeleccionados.value.filter(p => p.id !== id)
+  delete cantidadesIndividuales.value[id]
+}
+
+// cantidad a mostrar en la tabla cuando no es editable (unica, stock o general)
+function cantidadEstimada(p: any): number | string {
+  if (tipoCantidad.value === 'unica') return 1
+  if (tipoCantidad.value === 'personalizada') return cantidadGeneral.value ?? ''
+  // stock
+  return p.es_servicio ? 'N/A' : (p.stock ?? 0)
 }
 
 async function generar() {
@@ -137,9 +193,13 @@ watch(() => props.show, (val) => {
   if (!val) return
   modo.value = 'todos'
   tipoCantidad.value = 'unica'
-  cantidad.value = 1
   incluirPrecio.value = false
-  limpiarSeleccion()
+  usarCantidadGeneral.value = true
+  cantidadGeneral.value = null
+  cantidadesIndividuales.value = {}
+  busqueda.value = ''
+  resultados.value = []
+  productosSeleccionados.value = []
   cargarPreview()
 })
 </script>
@@ -189,55 +249,6 @@ watch(() => props.show, (val) => {
             </div>
           </div>
 
-          <!-- buscador especifico -->
-          <div v-if="modo === 'especifico'" class="relative">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Buscar producto</label>
-            <div class="relative">
-              <input
-                v-model="busqueda"
-                type="text"
-                placeholder="Nombre, código o SKU..."
-                class="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-bg4 dark:text-gray-100
-                       rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                autocomplete="off"
-              />
-              <button
-                v-if="productoSeleccionado"
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                @click="limpiarSeleccion"
-              >
-                <i class="fa-solid fa-xmark text-xs"></i>
-              </button>
-            </div>
-
-            <!-- resultados -->
-            <ul
-              v-if="resultados.length && !productoSeleccionado"
-              class="absolute z-10 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800
-                     border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg"
-            >
-              <li
-                v-for="p in resultados"
-                :key="p.id"
-                class="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-700 flex justify-between gap-2"
-                @click="seleccionarProducto(p)"
-              >
-                <span class="truncate text-gray-700 dark:text-gray-200">{{ p.nombre }}</span>
-                <span class="text-xs text-gray-400 whitespace-nowrap">{{ p.codigo }}</span>
-              </li>
-            </ul>
-
-            <p v-if="buscando" class="text-xs text-gray-400 mt-1">Buscando...</p>
-
-            <div
-              v-if="productoSeleccionado"
-              class="mt-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-bg4 rounded-lg px-3 py-2"
-            >
-              Stock disponible:
-              <strong>{{ productoSeleccionado.es_servicio ? 'N/A' : productoSeleccionado.stock }}</strong>
-            </div>
-          </div>
-
           <!-- tipo de cantidad -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Cantidad de etiquetas</label>
@@ -246,24 +257,44 @@ watch(() => props.show, (val) => {
                 <input type="radio" value="unica" v-model="tipoCantidad" class="text-primary" />
                 Una etiqueta por producto
               </label>
-              <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-                <input type="radio" value="personalizada" v-model="tipoCantidad" class="text-primary" />
-                Cantidad personalizada
-              </label>
+
+              <div>
+                <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                  <input type="radio" value="personalizada" v-model="tipoCantidad" class="text-primary" />
+                  Cantidad personalizada
+                </label>
+
+                <!-- opciones propias de "cantidad personalizada", indentadas para que se lea como parte de esa opcion -->
+                <div
+                  v-if="tipoCantidad === 'personalizada'"
+                  class="ml-6 mt-2 pl-3 border-l-2 border-gray-200 dark:border-gray-700 space-y-2"
+                >
+                  <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                    <span class="relative inline-flex items-center shrink-0">
+                      <input type="checkbox" v-model="usarCantidadGeneral" class="sr-only peer" />
+                      <span class="w-9 h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer-checked:bg-primary transition-colors"></span>
+                      <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></span>
+                    </span>
+                    Usar la misma cantidad para todos los productos
+                  </label>
+
+                  <input
+                    v-if="usarCantidadGeneral"
+                    v-model.number="cantidadGeneral"
+                    type="number"
+                    min="1"
+                    placeholder="Cantidad"
+                    class="w-32 border border-gray-300 dark:border-gray-700 bg-white dark:bg-bg4 dark:text-gray-100
+                           rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+              </div>
+
               <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
                 <input type="radio" value="stock" v-model="tipoCantidad" class="text-primary" />
                 Según stock disponible
               </label>
             </div>
-
-            <input
-              v-if="tipoCantidad === 'personalizada'"
-              v-model.number="cantidad"
-              type="number"
-              min="1"
-              class="mt-2 w-32 border border-gray-300 dark:border-gray-700 bg-white dark:bg-bg4 dark:text-gray-100
-                     rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-            />
           </div>
 
           <!-- incluir precio -->
@@ -271,6 +302,83 @@ watch(() => props.show, (val) => {
             <input type="checkbox" v-model="incluirPrecio" class="text-primary rounded" />
             Incluir precio en la etiqueta
           </label>
+
+          <!-- buscador especifico -->
+          <div v-if="modo === 'especifico'" class="relative">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Buscar productos</label>
+            <input
+              v-model="busqueda"
+              type="text"
+              placeholder="Nombre, código o SKU..."
+              class="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-bg4 dark:text-gray-100
+                     rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              autocomplete="off"
+            />
+
+            <!-- resultados -->
+            <ul
+              v-if="resultados.length"
+              class="absolute z-10 mt-1 w-full max-h-52 overflow-y-auto bg-white dark:bg-gray-800
+                     border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg"
+            >
+              <li
+                v-for="p in resultados"
+                :key="p.id"
+                class="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-700 flex justify-between gap-2"
+                @click="agregarProducto(p)"
+              >
+                <span class="truncate text-gray-700 dark:text-gray-200">{{ p.nombre }}</span>
+                <span class="text-xs text-gray-400 whitespace-nowrap">{{ p.codigo }}</span>
+              </li>
+            </ul>
+
+            <p v-if="buscando" class="text-xs text-gray-400 mt-1">Buscando...</p>
+
+            <!-- tabla de productos seleccionados, con scroll para listas largas -->
+            <div v-if="productosSeleccionados.length" class="mt-3 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div class="max-h-56 overflow-y-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-bg4 text-gray-500 dark:text-gray-300 sticky top-0">
+                    <tr>
+                      <th class="text-left px-3 py-1.5 font-medium">Producto</th>
+                      <th class="text-left px-3 py-1.5 font-medium">Código</th>
+                      <th class="text-left px-3 py-1.5 font-medium">Cantidad</th>
+                      <th class="px-3 py-1.5"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="p in productosSeleccionados"
+                      :key="p.id"
+                      class="border-t border-gray-100 dark:border-gray-700"
+                    >
+                      <td
+                        class="px-3 py-1.5 text-gray-700 dark:text-gray-200 truncate max-w-[140px]"
+                        :title="p.nombre"
+                      >{{ p.nombre }}</td>
+                      <td class="px-3 py-1.5 text-gray-500 dark:text-gray-400">{{ p.codigo }}</td>
+                      <td class="px-3 py-1.5 text-gray-500 dark:text-gray-400">
+                        <input
+                          v-if="tipoCantidad === 'personalizada' && !usarCantidadGeneral"
+                          v-model.number="cantidadesIndividuales[p.id]"
+                          type="number"
+                          min="1"
+                          class="w-16 border border-gray-300 dark:border-gray-700 bg-white dark:bg-bg4 dark:text-gray-100
+                                 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        />
+                        <span v-else>{{ cantidadEstimada(p) }}</span>
+                      </td>
+                      <td class="px-3 py-1.5 text-right">
+                        <button class="text-gray-400 hover:text-red-500" @click="quitarProducto(p.id)">
+                          <i class="fa-solid fa-xmark"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- columna preview -->
